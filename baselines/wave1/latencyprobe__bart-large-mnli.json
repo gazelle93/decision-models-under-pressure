@@ -1,0 +1,20 @@
+{
+  "enron_spam": {
+    "n_labels": 2,
+    "n": 25,
+    "p50_ms": 98.0,
+    "max_ms": 483.7
+  },
+  "twitter_fin_topic": {
+    "n_labels": 20,
+    "n": 25,
+    "p50_ms": 593.0,
+    "max_ms": 720.0
+  },
+  "banking77": {
+    "n_labels": 77,
+    "n": 25,
+    "p50_ms": 2301.1,
+    "max_ms": 3457.8
+  }
+}
