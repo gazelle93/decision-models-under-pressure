@@ -30,7 +30,7 @@ def main():
     if spec.status != "ready":
         raise SystemExit(f"{spec.key} is not wired yet (status={spec.status})")
 
-    examples = spec.loader(spec, args.limit)
+    examples = spec.loader(spec, args.limit, 42)
     model = ZeroShotNLI(args.model, device=args.device)
 
     stamp = time.strftime("%Y%m%d-%H%M%S")
