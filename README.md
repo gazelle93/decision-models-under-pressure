@@ -33,3 +33,8 @@ https://claude.ai/code/artifact/030ca553-fc0a-4200-863d-70ac0103862b
   bart-large-mnli, one constrained LLM ceiling.
 - Long-input handling: the NLI pipeline truncates at the model's max length;
   fine for wave-1 short sets, must be revisited for arxiv/ECtHR slots.
+- Bootstrap CIs over examples on all metrics (resample the JSONL; no re-runs).
+- Perturbation robustness: M option-order shuffles per example (flip rate +
+  min-accuracy) and 3+ question/template variants per task (min over templates).
+  Models are deterministic forward passes, so worst/best/mean is defined over
+  perturbations and few-shot resamples, never over repeated identical calls.
