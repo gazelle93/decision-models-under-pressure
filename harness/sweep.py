@@ -56,16 +56,18 @@ def run_pair(adapter, model_name, spec, examples):
         lats = [avg_ms] * len(texts)
         lat_mode = "batched-avg"
     else:
-        if hasattr(adapter, "set_head_budget") and len(options) > 20:
-            adapter.set_head_budget(512)
+        if hasattr(adapter, "set_budgets") and len(options) > 20:
+            adapter.set_budgets(max_len=2048, head_max_len=1024)
         probs_list, lats = [], []
         for e in examples:
             p, ms = adapter.decide(e.text, e.options, spec.hypothesis_template, question=spec.question)
             probs_list.append(p)
             lats.append(ms)
         lat_mode = getattr(adapter, "latency_mode", "bs1")
-        if hasattr(adapter, "set_head_budget") and len(options) > 20:
-            adapter.set_head_budget(192)
+        if hasattr(adapter, "set_budgets") and len(options) > 20:
+            adapter.set_budgets(max_len=adapter.default_max_len,
+                                head_max_len=adapter.default_head_max_len)
+            lat_mode = "bs1-extended-ctx"
 
     records = [{"i": i, "probs": [round(x, 6) for x in p], "gold": ex.gold,
                 "latency_ms": round(l, 2)}
@@ -102,7 +104,13 @@ def latency_probe(adapter, model_name):
     (OUT / f"latencyprobe__{model_name}.json").write_text(json.dumps(probe, indent=2))
 
 
+def have_result(key, model_name):
+    return any(OUT.glob(f"{key}__{model_name}__*.metrics.json"))
+
+
 def main():
+    import sys
+    resume = "--resume" in sys.argv
     OUT.mkdir(exist_ok=True)
     all_summaries = []
     for model_name, factory in MODELS.items():
@@ -115,6 +123,9 @@ def main():
             continue
         for key, cap in CAPS.items():
             spec = REGISTRY[key]
+            if resume and have_result(key, model_name):
+                log(f"skip {model_name}/{key} (resume)")
+                continue
             try:
                 t0 = time.time()
                 examples = spec.loader(spec, cap, SEED)
@@ -125,7 +136,7 @@ def main():
             except Exception:
                 log(f"FAILED {model_name}/{key}\n{traceback.format_exc()}")
                 all_summaries.append({"model": model_name, "dataset": key, "error": "run_failed"})
-        if hasattr(adapter, "decide_many"):
+        if hasattr(adapter, "decide_many") and not (resume and (OUT / f"latencyprobe__{model_name}.json").exists()):
             try:
                 latency_probe(adapter, model_name)
             except Exception:
@@ -138,6 +149,12 @@ def main():
         except Exception:
             pass
 
+    # rebuild the summary from every metrics file (keep latest per pair)
+    latest = {}
+    for f in sorted(OUT.glob("*.metrics.json")):
+        s = json.loads(f.read_text())
+        latest[(s["dataset"], s["model"])] = s
+    all_summaries = list(latest.values())
     (OUT / "wave1_summary.json").write_text(json.dumps(all_summaries, indent=2))
     log("SWEEP DONE")
     cols = ["model", "dataset", "n", "accuracy", "macro_f1", "brier", "nll", "ece_15bin",

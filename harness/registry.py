@@ -97,10 +97,20 @@ _register(DatasetSpec(
     question="What is the emotion expressed in this utterance?",
     notes="Frozen Jev protocol set; CC-BY-NC (eval only).",
 ))
+TWITTER_FIN_TOPICS = [
+    "Analyst Update", "Fed or Central Banks", "Company or Product News",
+    "Treasuries or Corporate Debt", "Dividend", "Earnings", "Energy or Oil",
+    "Financials", "Currencies", "General News or Opinion",
+    "Gold or Metals or Materials", "IPO", "Legal or Regulation",
+    "M&A or Investments", "Macro", "Markets", "Politics", "Personnel Change",
+    "Stock Commentary", "Stock Movement",
+]  # card's id-order mapping; labels ship as bare ints with no ClassLabel names
+
 _register(DatasetSpec(
     key="twitter_fin_topic", hf_id="zeroshot/twitter-financial-news-topic", config=None,
     split="validation", slot="topic-20",
-    loader=lambda s, l, seed=42: _load_single_label(s, l, seed, "text", "label"),
+    loader=lambda s, l, seed=42: _load_single_label(s, l, seed, "text", "label",
+                                                    options=TWITTER_FIN_TOPICS),
     hypothesis_template="This financial news tweet is about {}.",
     question="What topic is this financial news tweet about?",
     notes="Frozen Jev protocol set; license unknown (flagged in brief).",
@@ -123,10 +133,24 @@ _register(DatasetSpec(
     question="What is the intent of this request?",
     notes="Cardinality stress + out-of-scope detection (oos label).",
 ))
+def _load_banking77(spec, limit, seed=42):
+    """mteb parquet mirror (PolyAI original is script-based, unloadable on datasets>=3).
+    Option names derived from the label_text column, id-ordered."""
+    from datasets import load_dataset
+
+    ds = load_dataset(spec.hf_id, split=spec.split, revision=spec.revision)
+    names = {}
+    for r in ds:
+        names.setdefault(int(r["label"]), _clean(r["label_text"]))
+    opts = [names[i] for i in range(len(names))]
+    ds = ds.select(_seeded_subset(len(ds), limit, seed))
+    return [Example(text=r["text"], gold=int(r["label"]), options=opts) for r in ds]
+
+
 _register(DatasetSpec(
-    key="banking77", hf_id="PolyAI/banking77", config=None, split="test",
+    key="banking77", hf_id="mteb/banking77", config=None, split="test",
     slot="comparability-only",
-    loader=lambda s, l, seed=42: _load_single_label(s, l, seed, "text", "label"),
+    loader=_load_banking77,
     hypothesis_template="The customer's banking intent is {}.",
     question="What is the customer's banking intent?",
     notes="CONTAMINATED vs Laurer/tasksource/RAFT; literature comparability only.",

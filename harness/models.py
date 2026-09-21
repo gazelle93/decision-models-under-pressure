@@ -83,12 +83,20 @@ class LayaChoice:
 
         self.model_id = model_id
         self.agent = laya.load(model_id)
+        self.default_max_len = self.agent.cfg.get("max_len", 512)
+        self.default_head_max_len = self.agent.cfg.get("head_max_len", 192)
         self.revision = "unpinned"
         self.latency_mode = "bs1"
 
-    def set_head_budget(self, n_tokens):
+    def set_budgets(self, max_len=None, head_max_len=None):
+        """Raise context budgets for many-option questions, per the Laya repo's
+        own Banking77 guidance. Decision quality at extended lengths is
+        unvalidated by the vendor; runs using this are flagged in notes."""
         try:
-            self.agent.cfg["head_max_len"] = n_tokens
+            if max_len is not None:
+                self.agent.cfg["max_len"] = max_len
+            if head_max_len is not None:
+                self.agent.cfg["head_max_len"] = head_max_len
             return True
         except Exception:
             return False
