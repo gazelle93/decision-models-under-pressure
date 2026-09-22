@@ -153,6 +153,23 @@ M x cost). Worst-case reporting = min over permutations, per protocol.
 - Laya >20-option runs use vendor-unvalidated extended context.
 - All numbers are zero-shot checkpoints as shipped; nothing here is our own trained model yet.
 
+## Two-stage N protocol (adopted 2026-09-22)
+
+Every experiment runs pilot-first: **Stage 1 at N=50** (hypothesis-generating,
+always labeled "pilot", never a headline claim), then **Stage 2 confirmatory**
+only for contrasts the pilot flags as interesting. Stage-2 rules, binding:
+
+1. Fresh seeded items (pilot items may be included; analysis is on the full
+   fresh draw) — never re-measure the same 50 and call it confirmation.
+2. Contrasts + decision rules pre-registered here BEFORE the run; everything
+   else in the output is exploratory.
+3. N from power, not vibes: flip-rate 8%-vs-4% needs ~550 items; a 5-point
+   accuracy gap near 0.7 resolves at ~500 items/domain under the paired
+   design. Hence the extensive-run spec of 300-500 items x 3-4 domains.
+4. Optional ladder 50 -> 200 -> 500 with a pre-stated stopping rule (drop a
+   contrast when its CI excludes the interesting effect) to save the
+   expensive NLI arm.
+
 ## Next
 
 1. SetFit few-shot curves (baseline matrix few-shot cells, K_labels in {10,25,50,100}/option).
