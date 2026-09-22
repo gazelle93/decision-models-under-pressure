@@ -1,6 +1,6 @@
 # Stage-2 pre-registration — Decision Models Under Pressure
 
-STATUS: DRAFT — binding once Mingyou approves. Written 2026-09-22, before any
+STATUS: APPROVED by Mingyou 2026-09-22 (in-session) — BINDING. Jev arm deferred (no API credentials). Written 2026-09-22, before any
 stage-2 inference. Deviations go in a deviations log, not in silent edits.
 
 ## Scope
@@ -84,4 +84,4 @@ interesting effect; otherwise complete to 500/domain. Estimated compute:
 
 ## Sign-off
 
-- [ ] Mingyou approval (date):
+- [x] Mingyou approval (date): 2026-09-22
