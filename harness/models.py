@@ -120,3 +120,54 @@ class LayaChoice:
             probs = [1.0 if o == ans.get("choice") else 0.0 for o in options]
         s = sum(probs) or 1.0
         return [p / s for p in probs], latency_ms
+
+
+class EmbeddingSim:
+    """A2: bi-encoder label-similarity zero-shot. Options verbalized with the
+    dataset's hypothesis template, embedded, cosine-scored against the text,
+    softmax at a fixed scale. Uncalibrated by construction; the temperature
+    stage refits it like everything else."""
+
+    def __init__(self, model_id="BAAI/bge-large-en-v1.5", device=None, scale=20.0):
+        import torch
+        from sentence_transformers import SentenceTransformer
+
+        self.model_id = model_id
+        self.scale = scale
+        if device is None:
+            device = "mps" if torch.backends.mps.is_available() else "cpu"
+        self.m = SentenceTransformer(model_id, device=device)
+        self.revision = "unpinned"
+        self.latency_mode = "bs1"
+        self._opt_cache = {}
+
+    def _softmax(self, sims):
+        import math
+        z = [s * self.scale for s in sims]
+        mx = max(z)
+        e = [math.exp(v - mx) for v in z]
+        s = sum(e)
+        return [v / s for v in e]
+
+    def _opts(self, options, template):
+        key = (tuple(options), template)
+        if key not in self._opt_cache:
+            texts = [template.format(o) for o in options]
+            self._opt_cache[key] = self.m.encode(texts, normalize_embeddings=True)
+        return self._opt_cache[key]
+
+    def decide(self, text, options, hypothesis_template, question=None):
+        import time as _t
+        t0 = _t.perf_counter()
+        opt = self._opts(options, hypothesis_template)
+        v = self.m.encode([text], normalize_embeddings=True)[0]
+        probs = self._softmax(list(opt @ v))
+        return probs, (_t.perf_counter() - t0) * 1000
+
+    def decide_many(self, texts, options, hypothesis_template, question=None, batch_size=64):
+        import time as _t
+        t0 = _t.perf_counter()
+        opt = self._opts(options, hypothesis_template)
+        vs = self.m.encode(list(texts), normalize_embeddings=True, batch_size=batch_size)
+        res = [self._softmax(list(opt @ v)) for v in vs]
+        return res, (_t.perf_counter() - t0) * 1000 / len(texts)

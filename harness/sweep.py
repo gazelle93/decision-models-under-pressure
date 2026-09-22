@@ -44,6 +44,7 @@ MODELS = {
     "laya": lambda: __import__("harness.models", fromlist=["LayaChoice"]).LayaChoice("convaiinnovations/laya"),
     "deberta-v3-large-zeroshot-v2.0": lambda: make_nli("MoritzLaurer/deberta-v3-large-zeroshot-v2.0"),
     "bart-large-mnli": lambda: make_nli("facebook/bart-large-mnli"),
+    "bge-large-en-v1.5": lambda: __import__("harness.models", fromlist=["EmbeddingSim"]).EmbeddingSim(),
 }
 
 
@@ -111,9 +112,14 @@ def have_result(key, model_name):
 def main():
     import sys
     resume = "--resume" in sys.argv
+    only = None
+    if "--models" in sys.argv:
+        only = set(sys.argv[sys.argv.index("--models") + 1].split(","))
     OUT.mkdir(exist_ok=True)
     all_summaries = []
     for model_name, factory in MODELS.items():
+        if only and model_name not in only:
+            continue
         log(f"=== loading {model_name}")
         try:
             adapter = factory()

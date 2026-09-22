@@ -1,0 +1,173 @@
+"""K-sweep pilot (brief Section 8.2): nested distractors over a real label
+universe, CLINC gold items, K in {2..256}. n=50 items -> a pilot for curve
+shape, not headline numbers (flagged). K=512/1024 wait on a larger universe.
+
+Usage: .venv/bin/python -m harness.ksweep
+"""
+from __future__ import annotations
+
+import json
+import pathlib
+import random
+import time
+import traceback
+
+from .registry import _clean
+
+KS = [2, 4, 8, 16, 32, 64, 128, 256]
+N_ITEMS = 50
+FLIP_K = 16
+FLIP_SHUFFLES = 5
+OUT = pathlib.Path("results")
+
+
+def log(msg):
+    print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
+
+
+def build_universe():
+    from datasets import load_dataset
+
+    opts = set()
+    def add(names): opts.update(_clean(n) for n in names)
+
+    clinc = load_dataset("clinc/clinc_oos", "plus", split="test")
+    clinc_names = [_clean(n) for n in clinc.features["intent"].names if n != "oos"]
+    add(clinc_names)
+    b77 = load_dataset("mteb/banking77", split="test")
+    add({r["label_text"] for r in b77})
+    try:
+        mas = load_dataset("AmazonScience/massive", "en-US", split="test")
+        add(mas.features["intent"].names)
+    except Exception:
+        log("massive skipped:\n" + traceback.format_exc(limit=1))
+    try:
+        ge = load_dataset("google-research-datasets/go_emotions", "simplified", split="test")
+        add(ge.features["labels"].feature.names)
+    except Exception:
+        log("go_emotions skipped")
+    try:
+        db = load_dataset("fancyzhx/dbpedia_14", split="test")
+        add(db.features["label"].names)
+    except Exception:
+        log("dbpedia skipped")
+    from .registry import TWITTER_FIN_TOPICS
+    add(TWITTER_FIN_TOPICS)
+    return sorted(opts), clinc, clinc_names
+
+
+def build_items(clinc, clinc_names, universe):
+    rows = [r for r in clinc if clinc.features["intent"].names[r["intent"]] != "oos"]
+    rng = random.Random(7)
+    picked = rng.sample(rows, N_ITEMS)
+    items = []
+    for i, r in enumerate(picked):
+        gold = _clean(clinc.features["intent"].names[r["intent"]])
+        pool = [o for o in universe if o != gold]
+        distractors = random.Random(1000 + i).sample(pool, max(KS) - 1)  # nested prefix
+        items.append({"text": r["text"], "gold": gold, "distractors": distractors})
+    return items
+
+
+def options_for(item, K, order_seed=None):
+    opts = [item["gold"]] + item["distractors"][: K - 1]
+    random.Random(order_seed if order_seed is not None else hash(item["gold"]) % 10**6 + K).shuffle(opts)
+    return opts
+
+
+QUESTION = "What is the intent or category of this text?"
+TEMPLATE = "The intent or category of this text is {}."
+
+
+def run_model(name, adapter, items):
+    import math
+    per_k = {}
+    for K in KS:
+        recs, fails = [], 0
+        t_lat = []
+        for i, item in enumerate(items):
+            opts = options_for(item, K)
+            gold_idx = opts.index(item["gold"])
+            try:
+                probs, ms = adapter.decide(item["text"], opts, TEMPLATE, question=QUESTION)
+            except Exception:
+                fails += 1
+                continue
+            top5 = sorted(range(len(probs)), key=probs.__getitem__, reverse=True)[:5]
+            recs.append({
+                "acc": 1.0 if max(range(len(probs)), key=probs.__getitem__) == gold_idx else 0.0,
+                "top5": 1.0 if gold_idx in top5 else 0.0,
+                "nll": -math.log(max(probs[gold_idx], 1e-12)),
+            })
+            t_lat.append(ms)
+        if fails == len(items):
+            per_k[K] = {"infeasible": True}
+            log(f"{name} K={K}: INFEASIBLE for all items")
+            continue
+        n = len(recs)
+        t_lat.sort()
+        per_k[K] = {
+            "n": n, "fails": fails,
+            "acc": round(sum(r["acc"] for r in recs) / n, 3),
+            "top5": round(sum(r["top5"] for r in recs) / n, 3),
+            "nll": round(sum(r["nll"] for r in recs) / n, 3),
+            "p50_ms": round(t_lat[n // 2], 1),
+        }
+        log(f"{name} K={K}: acc {per_k[K]['acc']} top5 {per_k[K]['top5']} "
+            f"nll {per_k[K]['nll']} p50 {per_k[K]['p50_ms']}ms fails {fails}")
+    # permutation flip test at FLIP_K
+    flips, total = 0, 0
+    for i, item in enumerate(items):
+        preds = []
+        for s in range(FLIP_SHUFFLES):
+            opts = options_for(item, FLIP_K, order_seed=5000 + i * 10 + s)
+            try:
+                probs, _ = adapter.decide(item["text"], opts, TEMPLATE, question=QUESTION)
+            except Exception:
+                continue
+            preds.append(opts[max(range(len(probs)), key=probs.__getitem__)])
+        if len(preds) >= 2:
+            total += 1
+            if len(set(preds)) > 1:
+                flips += 1
+    per_k["flip_rate_K16"] = round(flips / total, 3) if total else None
+    log(f"{name} flip-rate@K16 over {FLIP_SHUFFLES} orders: {per_k['flip_rate_K16']}")
+    return per_k
+
+
+def main():
+    OUT.mkdir(exist_ok=True)
+    universe, clinc, clinc_names = build_universe()
+    log(f"universe size: {len(universe)} unique option strings")
+    items = build_items(clinc, clinc_names, universe)
+
+    from .models import EmbeddingSim, GLiClassZS, LayaChoice, ZeroShotNLI
+    results = {"universe_size": len(universe), "n_items": N_ITEMS, "Ks": KS,
+               "note": "pilot n=50; curve shape only, not headline numbers", "models": {}}
+
+    factories = {
+        "bge-large-en-v1.5": lambda: EmbeddingSim(),
+        "laya": lambda: (lambda a: (a.set_budgets(2048, 1024), a)[1])(LayaChoice()),
+        "gliclass-large-v3.0": lambda: GLiClassZS(),
+        "deberta-v3-base-zeroshot-v2.0": lambda: ZeroShotNLI("MoritzLaurer/deberta-v3-base-zeroshot-v2.0"),
+    }
+    for name, factory in factories.items():
+        log(f"=== {name}")
+        try:
+            adapter = factory()
+        except Exception:
+            log(f"LOAD FAILED {name}\n{traceback.format_exc(limit=3)}")
+            results["models"][name] = {"error": "load_failed"}
+            continue
+        try:
+            results["models"][name] = run_model(name, adapter, items)
+        except Exception:
+            log(f"RUN FAILED {name}\n{traceback.format_exc(limit=3)}")
+            results["models"][name] = {"error": "run_failed"}
+        del adapter
+        (OUT / "ksweep_pilot.json").write_text(json.dumps(results, indent=2))
+    log("KSWEEP DONE")
+
+
+if __name__ == "__main__":
+    main()
