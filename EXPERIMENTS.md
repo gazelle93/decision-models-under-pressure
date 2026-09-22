@@ -181,7 +181,7 @@ bge, so part of bge's gain (+.14-.16 at large K) is filter-model bias; the
 extensive run must use two independent filter models or report both filtered
 and unfiltered curves. (4) v1 -> v2 deltas also include distractor re-sampling
 noise (pools changed, so draws changed); at n=50 only the large moves are
-trustworthy. Artifacts: results/universe_v1.json, ksweep_pilot_v2clean.json.
+trustworthy. Artifacts: results/universe_v1.json, ksweep_pilot_v2clean.json. Full dataset-engineering write-up: Lab Log artifact section 2 (collection, normalization, dual nomination channels, same-source exemption, adjudication, freeze, per-item exclusion, known biases).
 
 ## Two-stage N protocol (adopted 2026-09-22)
 
