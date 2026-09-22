@@ -144,3 +144,11 @@ M x cost). Worst-case reporting = min over permutations, per protocol.
 2. typed-decisions + PhishNChips wiring (product-shape + guardrail slots, published-number tie-ins).
 3. LOFO mixture design -> first A3 training run (ablations B, C first).
 4. Larger option universe for K=512/1024; bootstrap CIs; debiased ECE.
+5. **Jev arm of the K-sweep + flip test** (queued; needs TypeSafe API access):
+   same 50 nested-distractor items, K in {2..128, 255} (API caps choices at 255,
+   so the ceiling is API-enforced, not measurable). Purpose: architecture
+   fingerprinting — Jev's training/architecture are undisclosed, and the K-curve
+   shape + flip rate discriminate option-conditioned encoder vs pair scorer vs
+   autoregressive LLM signatures. Priors from external evals: 13% order-flip
+   (nibzard), faster than GLiNER at 72 labels (AbdelStark). Hosted latency
+   reported separately; rung = ungradable. Cost < $1 in API calls.
