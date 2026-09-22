@@ -153,6 +153,36 @@ M x cost). Worst-case reporting = min over permutations, per protocol.
 - Laya >20-option runs use vendor-unvalidated extended context.
 - All numbers are zero-shot checkpoints as shipped; nothing here is our own trained model yet.
 
+## Wave 2.5 — distractor-cleanup sensitivity (2026-09-22)
+
+Phase A/B of the distractor plan executed: universe_v1 frozen (410 canonical
+options from 11 sources, 3 merges, 52 cross-source conflict pairs; same-source
+pairs exempt — source datasets pre-adjudicate their own labels; nomination =
+mpnet cosine >= 0.60 OR token containment, cross-source only; default ruling
+CONFLICT). Per-item Phase-B exclusion: each text's top-10 nearest options
+(mpnet) removed from its distractor pool (median 9 exclusions/item).
+K-sweep pilot rerun on the clean universe, same 50 items:
+
+| K | 64 | 128 | 256 | | flip@K16 |
+|---|---|---|---|---|---|
+| laya      | .80 -> .92 | .64 -> .72 | **.24 -> .52** | | .04 -> .00 |
+| gliclass  | .88 -> .82 | .78 -> .74 | .56 -> .68 | | .08 -> .02 |
+| bge       | .74 -> .82 | .64 -> .80 | .62 -> .76 | | .00 -> .00 |
+| deberta-b | .74 -> .66 | .60 -> .56 | .50 -> .56 | | .00 -> .00 |
+
+**Findings.** (1) Over half of Laya's K=256 "cliff" was distractor ambiguity
+(+.28); a real context-ceiling degradation remains (.92@64 -> .52@256).
+(2) **Order flips collapsed after cleanup** (gliclass 8% -> 2%, laya 4% -> 0%):
+the pilot's order sensitivity was concentrated on ambiguous, defensible-
+either-way candidates. The architectural flip tax is smaller than wave 2
+suggested — stage-2 N required before claiming it is near-zero.
+(3) Honest bias note: per-item exclusion uses mpnet, which correlates with
+bge, so part of bge's gain (+.14-.16 at large K) is filter-model bias; the
+extensive run must use two independent filter models or report both filtered
+and unfiltered curves. (4) v1 -> v2 deltas also include distractor re-sampling
+noise (pools changed, so draws changed); at n=50 only the large moves are
+trustworthy. Artifacts: results/universe_v1.json, ksweep_pilot_v2clean.json.
+
 ## Two-stage N protocol (adopted 2026-09-22)
 
 Every experiment runs pilot-first: **Stage 1 at N=50** (hypothesis-generating,
