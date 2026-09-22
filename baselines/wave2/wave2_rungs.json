@@ -1,0 +1,281 @@
+[
+  {
+    "model": "bart-large-mnli",
+    "dataset": "banking77",
+    "accuracy": 0.3233,
+    "macro_f1": 0.2875,
+    "ece_15bin": 0.1966,
+    "rung": "G4",
+    "why": "family absent from full disclosure"
+  },
+  {
+    "model": "deberta-v3-base-zeroshot-v2.0",
+    "dataset": "banking77",
+    "accuracy": 0.4967,
+    "macro_f1": 0.4721,
+    "ece_15bin": 0.2026,
+    "rung": "G0",
+    "why": "trained on this dataset"
+  },
+  {
+    "model": "deberta-v3-large-zeroshot-v2.0",
+    "dataset": "banking77",
+    "accuracy": 0.5067,
+    "macro_f1": 0.4779,
+    "ece_15bin": 0.1223,
+    "rung": "G0",
+    "why": "trained on this dataset"
+  },
+  {
+    "model": "gliclass-large-v3.0",
+    "dataset": "banking77",
+    "accuracy": 0.4933,
+    "macro_f1": 0.5113,
+    "ece_15bin": 0.5067,
+    "rung": "G4*",
+    "why": "no disclosed overlap, but disclosure is partial"
+  },
+  {
+    "model": "laya",
+    "dataset": "banking77",
+    "accuracy": 0.4733,
+    "macro_f1": 0.4393,
+    "ece_15bin": 0.3733,
+    "rung": "G3",
+    "why": "family 'intent' in training"
+  },
+  {
+    "model": "bart-large-mnli",
+    "dataset": "clinc150_oos",
+    "accuracy": 0.3967,
+    "macro_f1": 0.4404,
+    "ece_15bin": 0.2535,
+    "rung": "G4",
+    "why": "family absent from full disclosure"
+  },
+  {
+    "model": "deberta-v3-base-zeroshot-v2.0",
+    "dataset": "clinc150_oos",
+    "accuracy": 0.4567,
+    "macro_f1": 0.4555,
+    "ece_15bin": 0.0803,
+    "rung": "G3",
+    "why": "family 'intent' in training"
+  },
+  {
+    "model": "deberta-v3-large-zeroshot-v2.0",
+    "dataset": "clinc150_oos",
+    "accuracy": 0.5267,
+    "macro_f1": 0.5438,
+    "ece_15bin": 0.1146,
+    "rung": "G3",
+    "why": "family 'intent' in training"
+  },
+  {
+    "model": "gliclass-large-v3.0",
+    "dataset": "clinc150_oos",
+    "accuracy": 0.5233,
+    "macro_f1": 0.5454,
+    "ece_15bin": 0.4767,
+    "rung": "G4*",
+    "why": "no disclosed overlap, but disclosure is partial"
+  },
+  {
+    "model": "laya",
+    "dataset": "clinc150_oos",
+    "accuracy": 0.56,
+    "macro_f1": 0.5722,
+    "ece_15bin": 0.3723,
+    "rung": "G3",
+    "why": "family 'intent' in training"
+  },
+  {
+    "model": "bart-large-mnli",
+    "dataset": "daily_dialog_emotion",
+    "accuracy": 0.112,
+    "macro_f1": 0.164,
+    "ece_15bin": 0.3637,
+    "rung": "G4",
+    "why": "family absent from full disclosure"
+  },
+  {
+    "model": "deberta-v3-base-zeroshot-v2.0",
+    "dataset": "daily_dialog_emotion",
+    "accuracy": 0.52,
+    "macro_f1": 0.25,
+    "ece_15bin": 0.2225,
+    "rung": "G3",
+    "why": "family 'emotion' in training"
+  },
+  {
+    "model": "deberta-v3-large-zeroshot-v2.0",
+    "dataset": "daily_dialog_emotion",
+    "accuracy": 0.772,
+    "macro_f1": 0.3836,
+    "ece_15bin": 0.1538,
+    "rung": "G3",
+    "why": "family 'emotion' in training"
+  },
+  {
+    "model": "gliclass-large-v3.0",
+    "dataset": "daily_dialog_emotion",
+    "accuracy": 0.568,
+    "macro_f1": 0.324,
+    "ece_15bin": 0.432,
+    "rung": "G4*",
+    "why": "no disclosed overlap, but disclosure is partial"
+  },
+  {
+    "model": "laya",
+    "dataset": "daily_dialog_emotion",
+    "accuracy": 0.642,
+    "macro_f1": 0.2702,
+    "ece_15bin": 0.2229,
+    "rung": "G4*",
+    "why": "no disclosed overlap, but disclosure is partial"
+  },
+  {
+    "model": "bart-large-mnli",
+    "dataset": "enron_spam",
+    "accuracy": 0.586,
+    "macro_f1": 0.5354,
+    "ece_15bin": 0.1511,
+    "rung": "G4",
+    "why": "family absent from full disclosure"
+  },
+  {
+    "model": "MoritzLaurer/deberta-v3-base-zeroshot-v2.0",
+    "dataset": "enron_spam",
+    "accuracy": 0.76,
+    "macro_f1": 0.7591,
+    "ece_15bin": 0.169,
+    "rung": "UG",
+    "why": "model not in disclosure map"
+  },
+  {
+    "model": "deberta-v3-base-zeroshot-v2.0",
+    "dataset": "enron_spam",
+    "accuracy": 0.778,
+    "macro_f1": 0.7777,
+    "ece_15bin": 0.1159,
+    "rung": "G3",
+    "why": "family 'spam' in training"
+  },
+  {
+    "model": "deberta-v3-large-zeroshot-v2.0",
+    "dataset": "enron_spam",
+    "accuracy": 0.834,
+    "macro_f1": 0.8317,
+    "ece_15bin": 0.0935,
+    "rung": "G3",
+    "why": "family 'spam' in training"
+  },
+  {
+    "model": "gliclass-large-v3.0",
+    "dataset": "enron_spam",
+    "accuracy": 0.748,
+    "macro_f1": 0.7471,
+    "ece_15bin": 0.252,
+    "rung": "G4*",
+    "why": "no disclosed overlap, but disclosure is partial"
+  },
+  {
+    "model": "laya",
+    "dataset": "enron_spam",
+    "accuracy": 0.982,
+    "macro_f1": 0.982,
+    "ece_15bin": 0.0493,
+    "rung": "G3",
+    "why": "family 'spam' in training"
+  },
+  {
+    "model": "bart-large-mnli",
+    "dataset": "sst5",
+    "accuracy": 0.466,
+    "macro_f1": 0.3044,
+    "ece_15bin": 0.1474,
+    "rung": "G4",
+    "why": "family absent from full disclosure"
+  },
+  {
+    "model": "deberta-v3-base-zeroshot-v2.0",
+    "dataset": "sst5",
+    "accuracy": 0.45,
+    "macro_f1": 0.3067,
+    "ece_15bin": 0.2897,
+    "rung": "G3",
+    "why": "family 'sentiment' in training"
+  },
+  {
+    "model": "deberta-v3-large-zeroshot-v2.0",
+    "dataset": "sst5",
+    "accuracy": 0.45,
+    "macro_f1": 0.2818,
+    "ece_15bin": 0.3075,
+    "rung": "G3",
+    "why": "family 'sentiment' in training"
+  },
+  {
+    "model": "gliclass-large-v3.0",
+    "dataset": "sst5",
+    "accuracy": 0.502,
+    "macro_f1": 0.4439,
+    "ece_15bin": 0.498,
+    "rung": "G3",
+    "why": "family 'sentiment' in training"
+  },
+  {
+    "model": "laya",
+    "dataset": "sst5",
+    "accuracy": 0.468,
+    "macro_f1": 0.4486,
+    "ece_15bin": 0.1153,
+    "rung": "G4*",
+    "why": "no disclosed overlap, but disclosure is partial"
+  },
+  {
+    "model": "bart-large-mnli",
+    "dataset": "twitter_fin_topic",
+    "accuracy": 0.454,
+    "macro_f1": 0.3794,
+    "ece_15bin": 0.0793,
+    "rung": "G4",
+    "why": "family absent from full disclosure"
+  },
+  {
+    "model": "deberta-v3-base-zeroshot-v2.0",
+    "dataset": "twitter_fin_topic",
+    "accuracy": 0.438,
+    "macro_f1": 0.3643,
+    "ece_15bin": 0.1097,
+    "rung": "G3",
+    "why": "family 'topic' in training"
+  },
+  {
+    "model": "deberta-v3-large-zeroshot-v2.0",
+    "dataset": "twitter_fin_topic",
+    "accuracy": 0.35,
+    "macro_f1": 0.2748,
+    "ece_15bin": 0.1909,
+    "rung": "G3",
+    "why": "family 'topic' in training"
+  },
+  {
+    "model": "gliclass-large-v3.0",
+    "dataset": "twitter_fin_topic",
+    "accuracy": 0.314,
+    "macro_f1": 0.3518,
+    "ece_15bin": 0.686,
+    "rung": "G4*",
+    "why": "no disclosed overlap, but disclosure is partial"
+  },
+  {
+    "model": "laya",
+    "dataset": "twitter_fin_topic",
+    "accuracy": 0.43,
+    "macro_f1": 0.4197,
+    "ece_15bin": 0.3228,
+    "rung": "G4*",
+    "why": "no disclosed overlap, but disclosure is partial"
+  }
+]
