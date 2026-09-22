@@ -242,6 +242,37 @@ calibration_summary.json and wave2_rungs.json.
 7. G4 intersection comparison replaces disjoint means (done in artifact).
 Plus: purge stale smoke-run artifacts from results/ summaries.
 
+## Wave 3 — raw-distribution reruns (2026-09-22, post-review fixes 1/2/4/6)
+
+GLiClass adapter now inverts the multi-label sigmoid path (exact softmax
+reconstruction from the same logits); Laya adapter runs an unrounded direct
+forward through laya.common (predict()'s 4-decimal rounding was the entire
+"sparse support" — gold ALWAYS reaches the model below the ctx ceiling).
+Accuracies unchanged (argmax invariant, consistency check passed).
+
+**Honest calibration (suite-mean ECE pre -> post, fitted T range):**
+- gliclass: .262 -> .118 (T 1.7-9.8) — genuinely overconfident, NOT degenerate;
+  the retracted .476 -> .046 was one-hot arithmetic.
+- laya (unrounded): .251 -> .091 (T 0.5-4.2).
+- No-transferable-temperature finding STANDS (within-model T spreads remain
+  large; bge's degenerate DailyDialog row persists).
+
+**K-sweep v3 (per-item JSONL + gold-in-support now logged):**
+- Accuracy curves unchanged from wave 2.5 (same argmax).
+- Laya top-5@256: .62 -> .86 unrounded (rounding had destroyed tie-breaking);
+  NLL@256 8.53 honest. The K collapse is top-rank discrimination, not total
+  ranking failure.
+- LATENCY CORRECTION: Laya direct-forward p50 = 8-21ms flat across K=2-256
+  (includes tokenize+collate+forward). Prior 27-277ms figures included
+  agent.predict() wrapper overhead. Strongest single-pass latency evidence
+  in the study; wrapper-vs-model latency now a disclosed distinction.
+- GLiClass top-5@256 .72; flip@K16 still 2% (1 item); laya/bge/deberta 0%.
+
+**Reference baselines (fix 2, results/reference_baselines.json):** majority =
+enron .502, dd-emotion .812 (beats all models), fin-topic .232, sst5 .300,
+clinc .180 ('out of scope' is the modal label — all models beat it),
+banking77 .027. All accuracy tables now report these; dd as lift.
+
 ## Two-stage N protocol (adopted 2026-09-22)
 
 Every experiment runs pilot-first: **Stage 1 at N=50** (hypothesis-generating,
