@@ -15,7 +15,8 @@ import time
 import traceback
 import zlib
 
-from .registry import TWITTER_FIN_TOPICS, _clean
+from .registry import TWITTER_FIN_TOPICS
+from .universe import norm as _clean  # universe's normalizer: golds must match option keys exactly
 
 SEED_ITEMS = 101
 KS = [2, 4, 8, 16, 32, 64, 128, 256]
@@ -221,7 +222,8 @@ def main():
     built = build_pools(domains, universe, sources, conflicts)
     for d in built:
         near_sizes = sorted(len(e["tiers"]["near"]) for e in built[d])
-        log(f"  {d}: n={len(built[d])}, near-pool median {near_sizes[len(near_sizes)//2]}")
+        med = near_sizes[len(near_sizes) // 2] if near_sizes else "n/a"
+        log(f"  {d}: n={len(built[d])}, near-pool median {med}")
 
     from .models import EmbeddingSim, GLiClassZS, LayaChoice, ZeroShotNLI
     factories = {
