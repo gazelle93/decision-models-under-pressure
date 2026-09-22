@@ -197,25 +197,47 @@ def run_model(name, adapter, items, suffix=""):
 
 
 def main():
+    """Arms for the wave-2.5 decomposition (review fix 3):
+      default            = universe_v1 (410) + filters      (arm C)
+      --universe288      = original 5-source universe        (arms A/B)
+      --nofilters        = no conflict matrix, no text top-10 (arms A/D)
+    A (288, nofilters) and C are already measured; B and D complete the 2x2."""
     import sys
-    suffix = sys.argv[1] if len(sys.argv) > 1 else ""
+    args = sys.argv[1:]
+    u288 = "--universe288" in args
+    nofilt = "--nofilters" in args
+    pos = [a for a in args if not a.startswith("--")]
+    suffix = pos[0] if pos else ""
     OUT.mkdir(exist_ok=True)
+
+    from datasets import load_dataset
+    clinc = load_dataset("clinc/clinc_oos", "plus", split="test")
+    clinc_names = [_clean(n) for n in clinc.features["intent"].names if n != "oos"]
+
     v1 = load_universe_v1()
-    if v1:
-        universe, conflicts, alias_of = v1
-        from datasets import load_dataset
-        clinc = load_dataset("clinc/clinc_oos", "plus", split="test")
-        clinc_names = [_clean(n) for n in clinc.features["intent"].names if n != "oos"]
-        log(f"universe_v1 (frozen): {len(universe)} canonical options, "
-            f"{sum(len(v) for v in conflicts.values()) // 2} conflict pairs")
-        items = build_items(clinc, clinc_names, universe, conflicts, alias_of)
-        excl = [it["n_excluded"] for it in items]
-        log(f"per-item exclusions (conflicts + text top-10): "
-            f"min {min(excl)} / median {sorted(excl)[len(excl)//2]} / max {max(excl)}")
+    if u288:
+        universe, _, _ = build_universe()
+        conflicts, alias_of = None, None
+        if not nofilt and v1:
+            opts410, conf410, alias410 = v1
+            uset = set(universe)
+            alias_of = {a: c for a, c in alias410.items() if a in uset and c in uset}
+            universe = sorted(uset - set(alias_of))
+            uset = set(universe)
+            conflicts = {k: {x for x in vs if x in uset} for k, vs in conf410.items() if k in uset}
+            conflicts = {k: vs for k, vs in conflicts.items() if vs}
+        log(f"universe: ORIGINAL 288-source set, {len(universe)} options, filters={'off' if nofilt else 'on'}")
     else:
-        universe, clinc, clinc_names = build_universe()
-        log(f"universe size: {len(universe)} unique option strings (DRAFT, no conflict matrix)")
-        items = build_items(clinc, clinc_names, universe)
+        assert v1, "universe_v1.json missing"
+        universe, conflicts, alias_of = v1
+        if nofilt:
+            conflicts, alias_of = None, None
+        log(f"universe: v1 ({len(universe)} options), filters={'off' if nofilt else 'on'}")
+
+    items = build_items(clinc, clinc_names, universe, conflicts, alias_of)
+    if conflicts is not None:
+        excl = [it["n_excluded"] for it in items]
+        log(f"per-item exclusions: min {min(excl)} / median {sorted(excl)[len(excl)//2]} / max {max(excl)}")
 
     from .models import EmbeddingSim, GLiClassZS, LayaChoice, ZeroShotNLI
     results = {"universe_size": len(universe), "n_items": N_ITEMS, "Ks": KS,
