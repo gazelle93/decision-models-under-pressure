@@ -170,6 +170,15 @@ K-sweep pilot rerun on the clean universe, same 50 items:
 | bge       | .74 -> .82 | .64 -> .80 | .62 -> .76 | | .00 -> .00 |
 | deberta-b | .74 -> .66 | .60 -> .56 | .50 -> .56 | | .00 -> .00 |
 
+**Why the 1.0 cells are unremarkable** (measured 2026-09-22): far-tier
+small-K items are easy by construction — median nearest-distractor-to-gold
+cosine is 0.109 at K=2 / 0.201 at K=8 (vs 0.403 at K=256), and per-item
+exclusion removes each text's 10 nearest options; 1.0 on n=50 = ">=0.94 at 95%
+confidence" (rule of three; a true-0.97 model goes 50/50 ~22% of the time);
+and CLINC is Laya's trained family. In this far-tier design the informative
+region starts ~K=64; small-K difficulty only exists in the near tier, whose
+small-K cells must NOT be 1.0 (else tier construction failed).
+
 **Findings.** (1) Over half of Laya's K=256 "cliff" was distractor ambiguity
 (+.28); a real context-ceiling degradation remains (.92@64 -> .52@256).
 (2) **Order flips collapsed after cleanup** (gliclass 8% -> 2%, laya 4% -> 0%):
