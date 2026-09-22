@@ -70,8 +70,13 @@ def build_items(clinc, clinc_names, universe):
 
 
 def options_for(item, K, order_seed=None):
+    """Default order seed is a stable CRC of the gold string, NOT Python hash()
+    (which is salted per process and broke run-to-run reproducibility in the
+    2026-09-22 pilot; orders were consistent within that run only)."""
+    import zlib
     opts = [item["gold"]] + item["distractors"][: K - 1]
-    random.Random(order_seed if order_seed is not None else hash(item["gold"]) % 10**6 + K).shuffle(opts)
+    seed = order_seed if order_seed is not None else zlib.crc32(item["gold"].encode()) % 10**6 + K
+    random.Random(seed).shuffle(opts)
     return opts
 
 

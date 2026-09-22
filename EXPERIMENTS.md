@@ -103,6 +103,21 @@ shape, not headline numbers.
 | bge (embedding) | .96 | .92 | .86 | .82 | .80 | .74 | .64 | **.62** | 703ms |
 | deberta-base (NLI) | 1.00 | .96 | .94 | .90 | .80 | .74 | .60 | .50 | 2,829ms |
 
+**Design audit (2026-09-22, on review):** setup is sound as a pilot (nested
+distractors, forced choice, paired items), with three recorded flaws.
+(1) Universe merges CLINC and Banking77 intents, so large-K cells can draw
+near-synonym distractors ("transfer" gold vs "transfer timing"); absolute
+accuracy at K>=128 is pessimistic for all models equally — fix via universe
+dedup or near/far distractor tiers in the extensive run. (2) Default option
+order used salted hash() — irreproducible across processes; fixed to CRC32
+(orders in the pilot were consistent within-run). (3) bge latency is
+cold-cache (re-embeds options per item); real serving caches option vectors,
+so its true K=256 latency is ~30ms, not 703ms. n=50 resolves curve shape only:
+acc gaps <~11 pts and the 8%-vs-4% flip contrast are NOT separable; extensive
+run = 300-500 items x 3-4 gold domains, deduped universe, 5 order seeds +
+3 phrasings at selected K, bootstrap CIs + paired tests, NLI capped at K<=64
+on the full grid (subsampled above). ~1-2 days background compute.
+
 Architectures trade places along K: option-conditioned dominates small-to-mid
 K (Laya perfect at K=8), GLiClass holds best through K=64-128, embeddings win
 at K=256. **Laya's context ceiling is a measured cliff** (.64@128 -> .24@256,
