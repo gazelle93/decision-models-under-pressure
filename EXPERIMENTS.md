@@ -192,6 +192,56 @@ and unfiltered curves. (4) v1 -> v2 deltas also include distractor re-sampling
 noise (pools changed, so draws changed); at n=50 only the large moves are
 trustworthy. Artifacts: results/universe_v1.json, ksweep_pilot_v2clean.json. Full dataset-engineering write-up: Lab Log artifact section 2 (collection, normalization, dual nomination channels, same-source exemption, adjudication, freeze, per-item exclusion, known biases).
 
+## External review #1 (2026-09-22) — ACCEPTED, fixes queued
+
+Full re-derivation review of artifact + repo. Figures matched the data; four
+claims did not survive, all verified against the repo before acceptance
+(GLiClass support sparsity re-measured: median/max 1 non-zero option on all
+six datasets, gold@0 up to 69%; T-grid ceiling confirmed 70.98; ECE == 1-acc
+identity exact on all GLiClass rows; duplicate enron row confirmed in
+calibration_summary.json).
+
+**Retracted / under revision:**
+1. All GLiClass and Laya calibration numbers (adapters discard the models'
+   distributions; GLiClass reaches the harness one-hot -> its .476->.046 is
+   the arithmetic floor of a constant-confidence predictor with zero
+   resolution; Laya's returned support is sparse, gold@0 up to 22% in-suite).
+2. "<=0.10 reachable with temperature alone": per-(model,dataset) fits on
+   labeled halves are not zero-shot, fitted T spans 0.4-71 within one model
+   (two rows railed at the search ceiling), and TS worsened 6/37
+   already-calibrated rows. Revised finding: NO transferable temperature
+   exists — raises the bar; ablations F/G now target schema-transferable
+   calibration directly.
+3. Wave-2.5 ambiguity attribution: confounded with universe dilution
+   (288->410 options cuts expected near-domain distractors ~31% at K=256
+   before any filter). Decomposition rerun required before any attribution.
+4. Flip contrast: 1 item vs 4 items, Fisher p~=0.36. Direction only.
+
+**Also corrected:** conflict matrix nearly inert (text top-10 filter supplies
+median 9/9 exclusions; its ambiguity precision unaudited); nomination script
+was never committed and universe.py's FLAG_T=0.80 disagrees with the used
+0.60+containment; "human adjudication" was model-proposed default-to-conflict
+pending spot-check; 8 loaded sources (not 9/11); DailyDialog majority class
+0.812 beats all six models (6/36 wave-1 cells below a constant predictor;
+lift-ordering happens to preserve rankings); G4 means averaged disjoint row
+sets (intersection on dd+fin reverses to laya .536 > gliclass .441 > bart
+.283); Laya's K=256 NLL is support-miss counting, not confidence evidence
+(harness cannot yet distinguish "ranked gold low" from "gold never reached
+the model"); ksweep logs aggregates only; three cosine figures were
+session-computed with no committed script; stale smoke-run rows pollute
+calibration_summary.json and wave2_rungs.json.
+
+**Fix queue (review's order):**
+1. Raw-score extraction in GLiClass + Laya adapters -> rerun calibration.
+2. Chance + majority baseline columns everywhere; DailyDialog as lift or drop.
+3. Wave-2.5 decomposition: clean filters on the ORIGINAL 288 universe.
+4. Per-item JSONL + gold-in-support logging in ksweep (enables bootstrap CIs).
+5. Commit nomination script; align FLAG_T; fix adjudication language (done in
+   artifact).
+6. Raise/flag T-grid ceiling; report Brier/resolution beside ECE.
+7. G4 intersection comparison replaces disjoint means (done in artifact).
+Plus: purge stale smoke-run artifacts from results/ summaries.
+
 ## Two-stage N protocol (adopted 2026-09-22)
 
 Every experiment runs pilot-first: **Stage 1 at N=50** (hypothesis-generating,
