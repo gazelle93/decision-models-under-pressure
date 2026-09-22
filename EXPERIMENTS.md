@@ -273,6 +273,36 @@ enron .502, dd-emotion .812 (beats all models), fin-topic .232, sst5 .300,
 clinc .180 ('out of scope' is the modal label — all models beat it),
 banking77 .027. All accuracy tables now report these; dd as lift.
 
+## Wave 3.5 — decomposition of the wave-2.5 delta (2026-09-22, review fix 3)
+
+Full 2x2: universe {288 original, 410 grown} x filters {off, on}, same 50
+items, all four models, accuracy at K in {32,64,128,256}. Arms: A=(288,off)
+wave-2, B=(288,on) NEW, C=(410,on) wave-3, D=(410,off) NEW.
+filter = mean(B-A, C-D); dilution = mean(D-A, C-B). results/decomposition.json.
+
+**Verdict: the review's dilution hypothesis confirmed.** For Laya at K=256 the
++0.28 recovery splits ~+0.16 dilution / ~+0.12 filtering; at K=128 dilution
+dominates outright (+0.11 vs -0.03). The retracted "over half was ambiguity"
+stays retracted; correct statement: universe growth (fewer near-domain
+distractors per draw) was the larger component, ambiguity removal real but
+secondary. Laya's clean-universe cliff itself stands (B arm: .40@256 on the
+288 universe WITH filters, vs .90@64).
+
+**Filter-model bias validated:** bge shows the largest filter effects
+(+0.10 at K=128/256), exactly as predicted from mpnet-filter correlation —
+even bge's filter effect is partly self-serving. Two independent filters
+mandatory for stage 2 (already in the design).
+
+**Early RQ3 signal (directional, n=50):** Laya is the MOST near-density-
+sensitive model (dilution effect +0.11/+0.16 at 128/256 vs <=+0.06 for all
+others) — a counter-signal to hypothesis H3 (option-option attention helps
+with near distractors), though confounded with its context ceiling at these
+K. Stage 2's near/far tiers at K<=64 (below the ceiling) will separate them.
+
+Effects at other cells are within noise (se ~0.07); only Laya@256 and bge's
+filter column stand above it. deberta shows ~no effects, as expected for a
+pass-per-label scorer.
+
 ## Two-stage N protocol (adopted 2026-09-22)
 
 Every experiment runs pilot-first: **Stage 1 at N=50** (hypothesis-generating,

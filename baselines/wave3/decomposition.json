@@ -1,0 +1,154 @@
+{
+  "laya": {
+    "32": {
+      "A": 0.9,
+      "B": 0.92,
+      "C": 0.98,
+      "D": 0.92,
+      "filter_effect": 0.04,
+      "dilution_effect": 0.04,
+      "interaction": 0.04
+    },
+    "64": {
+      "A": 0.8,
+      "B": 0.9,
+      "C": 0.92,
+      "D": 0.86,
+      "filter_effect": 0.08,
+      "dilution_effect": 0.04,
+      "interaction": -0.04
+    },
+    "128": {
+      "A": 0.64,
+      "B": 0.62,
+      "C": 0.72,
+      "D": 0.76,
+      "filter_effect": -0.03,
+      "dilution_effect": 0.11,
+      "interaction": -0.02
+    },
+    "256": {
+      "A": 0.24,
+      "B": 0.4,
+      "C": 0.52,
+      "D": 0.44,
+      "filter_effect": 0.12,
+      "dilution_effect": 0.16,
+      "interaction": -0.08
+    }
+  },
+  "gliclass-large-v3.0": {
+    "32": {
+      "A": 0.82,
+      "B": 0.86,
+      "C": 0.86,
+      "D": 0.9,
+      "filter_effect": 0.0,
+      "dilution_effect": 0.04,
+      "interaction": -0.08
+    },
+    "64": {
+      "A": 0.88,
+      "B": 0.84,
+      "C": 0.82,
+      "D": 0.84,
+      "filter_effect": -0.03,
+      "dilution_effect": -0.03,
+      "interaction": 0.02
+    },
+    "128": {
+      "A": 0.78,
+      "B": 0.76,
+      "C": 0.74,
+      "D": 0.76,
+      "filter_effect": -0.02,
+      "dilution_effect": -0.02,
+      "interaction": 0.0
+    },
+    "256": {
+      "A": 0.56,
+      "B": 0.66,
+      "C": 0.68,
+      "D": 0.64,
+      "filter_effect": 0.07,
+      "dilution_effect": 0.05,
+      "interaction": -0.06
+    }
+  },
+  "bge-large-en-v1.5": {
+    "32": {
+      "A": 0.8,
+      "B": 0.82,
+      "C": 0.9,
+      "D": 0.84,
+      "filter_effect": 0.04,
+      "dilution_effect": 0.06,
+      "interaction": 0.04
+    },
+    "64": {
+      "A": 0.74,
+      "B": 0.82,
+      "C": 0.82,
+      "D": 0.8,
+      "filter_effect": 0.05,
+      "dilution_effect": 0.03,
+      "interaction": -0.06
+    },
+    "128": {
+      "A": 0.64,
+      "B": 0.76,
+      "C": 0.8,
+      "D": 0.72,
+      "filter_effect": 0.1,
+      "dilution_effect": 0.06,
+      "interaction": -0.04
+    },
+    "256": {
+      "A": 0.62,
+      "B": 0.72,
+      "C": 0.76,
+      "D": 0.66,
+      "filter_effect": 0.1,
+      "dilution_effect": 0.04,
+      "interaction": 0.0
+    }
+  },
+  "deberta-v3-base-zeroshot-v2.0": {
+    "32": {
+      "A": 0.8,
+      "B": 0.78,
+      "C": 0.72,
+      "D": 0.72,
+      "filter_effect": -0.01,
+      "dilution_effect": -0.07,
+      "interaction": 0.02
+    },
+    "64": {
+      "A": 0.74,
+      "B": 0.7,
+      "C": 0.66,
+      "D": 0.68,
+      "filter_effect": -0.03,
+      "dilution_effect": -0.05,
+      "interaction": 0.02
+    },
+    "128": {
+      "A": 0.6,
+      "B": 0.62,
+      "C": 0.56,
+      "D": 0.6,
+      "filter_effect": -0.01,
+      "dilution_effect": -0.03,
+      "interaction": -0.06
+    },
+    "256": {
+      "A": 0.5,
+      "B": 0.52,
+      "C": 0.56,
+      "D": 0.5,
+      "filter_effect": 0.04,
+      "dilution_effect": 0.02,
+      "interaction": 0.04
+    }
+  }
+}
