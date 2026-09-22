@@ -30,8 +30,14 @@ def nll_at(records, T):
     return tot / len(records)
 
 
+GRID_LO, GRID_HI = math.exp(-24 / 8.0), math.exp(48 / 8.0)  # ~0.05 .. ~403
+
+
 def fit_T(cal):
-    grid = [math.exp(x / 8.0) for x in range(-24, 33)]  # ~0.05 .. ~60
+    """Returns (T, railed). Post-review fix: the old grid topped out at
+    exp(4)*1.3 = 71, and two rows silently railed there (calibrated uniform
+    guessing). Wider grid + explicit rail flag."""
+    grid = [math.exp(x / 8.0) for x in range(-24, 49)]
     best = min(grid, key=lambda T: nll_at(cal, T))
     lo, hi = best / 1.3, best * 1.3
     for _ in range(20):
@@ -40,7 +46,9 @@ def fit_T(cal):
             hi = mid2
         else:
             lo = mid1
-    return (lo + hi) / 2
+    T = (lo + hi) / 2
+    railed = T >= GRID_HI * 0.95 or T <= GRID_LO * 1.05
+    return T, railed
 
 
 def main():
@@ -59,17 +67,22 @@ def main():
         half = len(idx) // 2
         cal = [records[i] for i in idx[:half]]
         test = [records[i] for i in idx[half:]]
-        T = fit_T(cal)
+        T, railed = fit_T(cal)
         pre = metrics.summarize(test)
         post_records = [{**r, "probs": apply_T(r["probs"], T)} for r in test]
         post = metrics.summarize(post_records)
+        confs = [max(r["probs"]) for r in post_records]
+        conf_std = (sum((c - sum(confs) / len(confs)) ** 2 for c in confs) / len(confs)) ** 0.5
         row = {"dataset": dataset, "model": model, "n_test": len(test), "T": round(T, 3),
+               "T_railed": railed, "post_conf_std": round(conf_std, 4),
                "ece_pre": pre["ece_15bin"], "ece_post": post["ece_15bin"],
                "nll_pre": pre["nll"], "nll_post": post["nll"],
                "brier_pre": pre["brier"], "brier_post": post["brier"],
                "accuracy": post["accuracy"]}
         summary.append(row)
-        print(f"{model:32s} {dataset:22s} T={T:6.2f}  ece {pre['ece_15bin']:.3f} -> {post['ece_15bin']:.3f}"
+        rail = " RAILED" if railed else ""
+        flat = " CONST-CONF" if conf_std < 0.01 else ""
+        print(f"{model:32s} {dataset:22s} T={T:7.2f}{rail}{flat}  ece {pre['ece_15bin']:.3f} -> {post['ece_15bin']:.3f}"
               f"  nll {pre['nll']:.3f} -> {post['nll']:.3f}")
     (out / "calibration_summary.json").write_text(json.dumps(summary, indent=2))
 

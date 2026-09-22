@@ -126,9 +126,13 @@ QUESTION = "What is the intent or category of this text?"
 TEMPLATE = "The intent or category of this text is {}."
 
 
-def run_model(name, adapter, items):
+def run_model(name, adapter, items, suffix=""):
+    """Post-review fix 4: per-item JSONL (bootstrap CIs without reruns) and
+    gold-in-support logging (distinguishes "ranked gold low" from "gold never
+    reached the model")."""
     import math
     per_k = {}
+    item_f = (OUT / f"ksweep_items__{name}{suffix}.jsonl").open("w")
     for K in KS:
         recs, fails = [], 0
         t_lat = []
@@ -139,13 +143,22 @@ def run_model(name, adapter, items):
                 probs, ms = adapter.decide(item["text"], opts, TEMPLATE, question=QUESTION)
             except Exception:
                 fails += 1
+                item_f.write(json.dumps({"K": K, "i": i, "error": True}) + "\n")
                 continue
             top5 = sorted(range(len(probs)), key=probs.__getitem__, reverse=True)[:5]
-            recs.append({
+            rec = {
                 "acc": 1.0 if max(range(len(probs)), key=probs.__getitem__) == gold_idx else 0.0,
                 "top5": 1.0 if gold_idx in top5 else 0.0,
                 "nll": -math.log(max(probs[gold_idx], 1e-12)),
-            })
+            }
+            item_f.write(json.dumps({
+                "K": K, "i": i, "gold_idx": gold_idx,
+                "probs": [round(p, 6) for p in probs],
+                "support": sum(1 for p in probs if p > 0),
+                "gold_in_support": probs[gold_idx] > 0,
+                "latency_ms": round(ms, 2),
+            }) + "\n")
+            recs.append(rec)
             t_lat.append(ms)
         if fails == len(items):
             per_k[K] = {"infeasible": True}
@@ -179,6 +192,7 @@ def run_model(name, adapter, items):
                 flips += 1
     per_k["flip_rate_K16"] = round(flips / total, 3) if total else None
     log(f"{name} flip-rate@K16 over {FLIP_SHUFFLES} orders: {per_k['flip_rate_K16']}")
+    item_f.close()
     return per_k
 
 
@@ -222,7 +236,7 @@ def main():
             results["models"][name] = {"error": "load_failed"}
             continue
         try:
-            results["models"][name] = run_model(name, adapter, items)
+            results["models"][name] = run_model(name, adapter, items, suffix)
         except Exception:
             log(f"RUN FAILED {name}\n{traceback.format_exc(limit=3)}")
             results["models"][name] = {"error": "run_failed"}

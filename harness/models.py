@@ -60,21 +60,34 @@ class GLiClassZS:
             device = "mps" if torch.backends.mps.is_available() else "cpu"
         try:
             self.pipe = ZeroShotClassificationPipeline(
-                model, tok, classification_type="single-label", device=device)
+                model, tok, classification_type="multi-label", device=device)
         except Exception:
             self.pipe = ZeroShotClassificationPipeline(
-                model, tok, classification_type="single-label", device="cpu")
+                model, tok, classification_type="multi-label", device="cpu")
         self.revision = getattr(model.config, "_commit_hash", None) or "unpinned"
         self.latency_mode = "bs1"
 
     def decide(self, text, options, hypothesis_template=None, question=None):
+        """Post-review fix: the single-label pipeline returns only the argmax,
+        which reached the harness as a one-hot and invalidated every
+        calibration number (review #1). The multi-label path sigmoids the SAME
+        per-label logits and returns all of them at threshold 0, so inverting
+        the sigmoid and softmaxing reconstructs the exact single-label
+        distribution from raw scores."""
+        import math
         t0 = time.perf_counter()
         res = self.pipe(text, list(options), threshold=0.0)[0]
         latency_ms = (time.perf_counter() - t0) * 1000
         sb = {r["label"]: float(r["score"]) for r in res}
-        probs = [sb.get(o, 0.0) for o in options]
-        s = sum(probs) or 1.0
-        return [p / s for p in probs], latency_ms
+        eps = 1e-9
+        logits = []
+        for o in options:
+            s = min(max(sb.get(o, eps), eps), 1 - eps)
+            logits.append(math.log(s / (1 - s)))
+        mx = max(logits)
+        e = [math.exp(z - mx) for z in logits]
+        tot = sum(e)
+        return [v / tot for v in e], latency_ms
 
 
 class LayaChoice:
@@ -102,24 +115,46 @@ class LayaChoice:
             return False
 
     def decide(self, text, options, hypothesis_template=None, question=None):
+        """Post-review fix: agent.predict() rounds probabilities to 4 decimals
+        (laya/agent.py), which manufactured sparse support and NLL-floor
+        artifacts (review #1). This replicates system_one's forward using
+        laya's own building blocks and returns the unrounded shipped-
+        temperature distribution. Gold always reaches the model: markers are
+        built for every option or build_sequence raises."""
+        import numpy as np
+        import torch
+        from laya.common import QTYPES, build_sequence, collate_items, render_options
+        try:
+            from laya.common import temp_bucket
+        except ImportError:
+            from laya.agent import temp_bucket
+
+        agent = self.agent
         t0 = time.perf_counter()
-        q = {"label": {"type": "choice",
-                       "instructions": question or "Which option best describes this text?",
-                       "criteria": {o: o for o in options}}}
-        res = self.agent.predict({"text": text}, q)
+        qi = agent._to_internal({"type": "choice",
+                                 "instructions": question or "Which option best describes this text?",
+                                 "criteria": {o: o for o in options}})
+        max_len = agent.cfg.get("max_len", 512)
+        hml = agent.cfg.get("head_max_len", 192)
+        seq, markers = build_sequence(agent.tok, {"text": text}, qi, max_len, hml)
+        if len(markers) != len(render_options(qi)):
+            raise ValueError(f"options exceed head_max_len={hml}")
+        items = [{"ids": seq, "markers": markers, "qtype": QTYPES["choice"]}]
+        b = collate_items([items], agent.tok.pad_token_id)
+        with torch.no_grad():
+            logits, act = agent.model(
+                b["input_ids"].to(agent.device), b["attention_mask"].to(agent.device),
+                b["marker_pos"].to(agent.device), b["marker_mask"].to(agent.device),
+                b["qtype"].to(agent.device))
         latency_ms = (time.perf_counter() - t0) * 1000
-        ans = res["answers"]["label"]
-        dist = None
-        for key in ("probabilities", "distribution", "probs"):
-            if isinstance(ans.get(key), dict):
-                dist = ans[key]
-                break
-        if dist is not None:
-            probs = [float(dist.get(o, 0.0)) for o in options]
-        else:  # degenerate fallback so a schema surprise is visible, not fatal
-            probs = [1.0 if o == ans.get("choice") else 0.0 for o in options]
-        s = sum(probs) or 1.0
-        return [p / s for p in probs], latency_ms
+        z_raw = logits.float().cpu().numpy()[0, :len(options)]
+        t_scale = agent.temperature_by_options.get(
+            temp_bucket(QTYPES["choice"], len(options)), agent.temperature[QTYPES["choice"]])
+        z = z_raw / t_scale
+        e = np.exp(z - z.max())
+        p = e / e.sum()
+        self.last_raw_logits = [round(float(v), 6) for v in z_raw]
+        return [float(v) for v in p], latency_ms
 
 
 class EmbeddingSim:

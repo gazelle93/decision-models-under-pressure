@@ -21,7 +21,7 @@ import time
 import traceback
 
 OUT = pathlib.Path("results")
-FLAG_T = 0.80      # nominate pairs above this cosine
+FLAG_T = 0.80      # exploratory flagging only; authoritative nomination is harness/nominate.py (cos>=0.60 cross-source + containment)
 AUTO_MERGE_T = 0.93  # propose MERGE above this; CONFLICT in between
 
 
