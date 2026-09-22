@@ -56,16 +56,58 @@ def build_universe():
     return sorted(opts), clinc, clinc_names
 
 
-def build_items(clinc, clinc_names, universe):
+def load_universe_v1():
+    """Frozen Phase-A universe: canonical options + conflict matrix.
+    Returns (options, conflicts_by_option, alias_of) or None if not frozen yet."""
+    import json
+    f = pathlib.Path("results/universe_v1.json")
+    if not f.exists():
+        return None
+    v1 = json.loads(f.read_text())
+    conf = {}
+    for a, b in v1["conflicts"]:
+        conf.setdefault(a, set()).add(b)
+        conf.setdefault(b, set()).add(a)
+    alias_of = {al: canon for canon, als in v1["merges"].items() for al in als}
+    return sorted(v1["options"]), conf, alias_of
+
+
+def build_items(clinc, clinc_names, universe, conflicts=None, alias_of=None, text_excl_m=10):
     rows = [r for r in clinc if clinc.features["intent"].names[r["intent"]] != "oos"]
     rng = random.Random(7)
     picked = rng.sample(rows, N_ITEMS)
+
+    text_top = None
+    if conflicts is not None and text_excl_m:
+        # Phase-B per-item exclusion: drop each text's top-M nearest options
+        # (filter model = mpnet, NOT in the eval roster).
+        import numpy as np
+        import torch
+        from sentence_transformers import SentenceTransformer
+        fm = SentenceTransformer("sentence-transformers/all-mpnet-base-v2",
+                                 device="mps" if torch.backends.mps.is_available() else "cpu")
+        opt_emb = np.asarray(fm.encode(universe, normalize_embeddings=True, batch_size=64))
+        txt_emb = np.asarray(fm.encode([r["text"] for r in picked],
+                                       normalize_embeddings=True, batch_size=64))
+        sims = txt_emb @ opt_emb.T
+        text_top = [
+            {universe[j] for j in row.argsort()[-text_excl_m:]} for row in sims
+        ]
+
     items = []
     for i, r in enumerate(picked):
         gold = _clean(clinc.features["intent"].names[r["intent"]])
-        pool = [o for o in universe if o != gold]
+        if alias_of:
+            gold = alias_of.get(gold, gold)
+        excluded = {gold}
+        if conflicts is not None:
+            excluded |= conflicts.get(gold, set())
+        if text_top is not None:
+            excluded |= (text_top[i] - {gold})
+        pool = [o for o in universe if o not in excluded]
         distractors = random.Random(1000 + i).sample(pool, max(KS) - 1)  # nested prefix
-        items.append({"text": r["text"], "gold": gold, "distractors": distractors})
+        items.append({"text": r["text"], "gold": gold, "distractors": distractors,
+                      "n_excluded": len(excluded) - 1})
     return items
 
 
@@ -141,10 +183,25 @@ def run_model(name, adapter, items):
 
 
 def main():
+    import sys
+    suffix = sys.argv[1] if len(sys.argv) > 1 else ""
     OUT.mkdir(exist_ok=True)
-    universe, clinc, clinc_names = build_universe()
-    log(f"universe size: {len(universe)} unique option strings")
-    items = build_items(clinc, clinc_names, universe)
+    v1 = load_universe_v1()
+    if v1:
+        universe, conflicts, alias_of = v1
+        from datasets import load_dataset
+        clinc = load_dataset("clinc/clinc_oos", "plus", split="test")
+        clinc_names = [_clean(n) for n in clinc.features["intent"].names if n != "oos"]
+        log(f"universe_v1 (frozen): {len(universe)} canonical options, "
+            f"{sum(len(v) for v in conflicts.values()) // 2} conflict pairs")
+        items = build_items(clinc, clinc_names, universe, conflicts, alias_of)
+        excl = [it["n_excluded"] for it in items]
+        log(f"per-item exclusions (conflicts + text top-10): "
+            f"min {min(excl)} / median {sorted(excl)[len(excl)//2]} / max {max(excl)}")
+    else:
+        universe, clinc, clinc_names = build_universe()
+        log(f"universe size: {len(universe)} unique option strings (DRAFT, no conflict matrix)")
+        items = build_items(clinc, clinc_names, universe)
 
     from .models import EmbeddingSim, GLiClassZS, LayaChoice, ZeroShotNLI
     results = {"universe_size": len(universe), "n_items": N_ITEMS, "Ks": KS,
@@ -170,7 +227,7 @@ def main():
             log(f"RUN FAILED {name}\n{traceback.format_exc(limit=3)}")
             results["models"][name] = {"error": "run_failed"}
         del adapter
-        (OUT / "ksweep_pilot.json").write_text(json.dumps(results, indent=2))
+        (OUT / f"ksweep_pilot{suffix}.json").write_text(json.dumps(results, indent=2))
     log("KSWEEP DONE")
 
 
