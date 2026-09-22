@@ -68,23 +68,40 @@ def collect():
         add(db.features["label"].names, "dbpedia14")
     except Exception:
         log("  dbpedia FAILED")
-    for hf_id, cfg, feat, src in [
-        ("AmazonScience/massive", "en-US", "intent", "massive"),
-        ("FastFit/amazon_products", None, "label", "amazon_products"),
-        ("coastalcph/lex_glue", "ledgar", "label", "ledgar"),
-        ("SetFit/20_newsgroups", None, None, "20news"),
-        ("Davlan/sib200", "eng_Latn", "category", "sib200"),
-    ]:
+    def add_source(hf_id, cfg, split, src, feat=None):
+        """Generic label extraction: ClassLabel names, else label_text uniques,
+        else string-label uniques on `feat` or 'label'."""
         try:
-            ds = load_dataset(hf_id, cfg, split="test")
-            if src == "20news":
-                add({r["label_text"] for r in ds}, src)
-            elif feat in ds.features and hasattr(ds.features[feat], "names"):
-                add(ds.features[feat].names, src)
+            ds = load_dataset(hf_id, cfg, split=split)
+            col = feat or ("label_text" if "label_text" in ds.features else "label")
+            if col in ds.features and hasattr(ds.features[col], "names"):
+                add(ds.features[col].names, src)
+            elif col in ds.features:
+                vals = {str(r[col]) for r in ds}
+                if all(not v.lstrip("-").isdigit() for v in list(vals)[:20]):
+                    add(vals, src)
+                else:
+                    log(f"  {src}: labels are bare ints with no names, skipped")
             else:
-                add({str(r[feat]) for r in ds}, src)
+                log(f"  {src}: no usable label column, skipped")
         except Exception:
             log(f"  {src} FAILED: " + traceback.format_exc(limit=1).strip().splitlines()[-1])
+
+    for hf_id, cfg, split, src, feat in [
+        ("coastalcph/lex_glue", "ledgar", "test", "ledgar", "label"),
+        ("SetFit/20_newsgroups", None, "test", "20news", "label_text"),
+        ("Davlan/sib200", "eng_Latn", "test", "sib200", "category"),
+        # stage-2 growth (2026-09-22): toward 600+ canonical options
+        ("mteb/amazon_massive_intent", "en", "test", "massive", None),
+        ("mteb/mtop_intent", "en", "test", "mtop", None),
+        ("DeepPavlov/hwu64", None, "test", "hwu64", None),
+        ("DeveloperOats/DBPedia_Classes", None, "test", "dbpedia_l2", "l2"),
+        ("CogComp/trec", None, "test", "trec_fine", "fine_label"),
+        ("fancyzhx/ag_news", None, "test", "ag_news", "label"),
+        ("yahoo_answers_topics", None, "test", "yahoo", "topic"),
+        ("sonos-nlu-benchmark/snips_built_in_intents", None, "train", "snips", "label"),
+    ]:
+        add_source(hf_id, cfg, split, src, feat)
     return options
 
 

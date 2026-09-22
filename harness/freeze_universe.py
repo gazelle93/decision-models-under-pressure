@@ -19,7 +19,16 @@ MERGES = {
     "definition": ["definitions"],
     "change pin": ["pin change"],
     "insurance": ["insurances"],
+    # v2 additions (545-option universe, adjudicated 2026-09-22): cross-naming-style
+    # synonyms only. Deceptive lookalikes stay CONFLICTs ('venue' vs LEDGAR
+    # 'venues' clause; 'organisation' entity vs 'organizations' clause).
+    "weather": ["getweather", "weather query"],
+    "share location": ["sharecurrentlocation"],
+    "recipe": ["cooking recipe"],
+    "sciencetechnology": ["scitech"],
 }
+
+VERSION = "v2"
 # 'approval' (emotion) vs 'approvals' (legal clause) is deliberately NOT a
 # merge: different meanings, near-identical strings -> CONFLICT below.
 
@@ -56,7 +65,7 @@ def main():
             conflicts.add(tuple(sorted((ca, cb))))
 
     v1 = {
-        "version": "v1",
+        "version": VERSION,
         "frozen": "2026-09-22",
         "adjudication": "Claude pre-adjudicated; pending Mingyou spot-check",
         "policy": {
@@ -73,8 +82,8 @@ def main():
         "options": {k: sorted(v["sources"]) for k, v in sorted(options.items())},
         "conflicts": sorted(list(p) for p in conflicts),
     }
-    (out / "universe_v1.json").write_text(json.dumps(v1, indent=1))
-    print(f"universe_v1: {v1['n_options']} canonical options, "
+    (out / f"universe_{VERSION}.json").write_text(json.dumps(v1, indent=1))
+    print(f"universe_{VERSION}: {v1['n_options']} canonical options, "
           f"{v1['n_merges']} aliases merged, {v1['n_conflicts']} conflict pairs")
 
 

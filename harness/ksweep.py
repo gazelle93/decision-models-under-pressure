@@ -57,10 +57,12 @@ def build_universe():
 
 
 def load_universe_v1():
-    """Frozen Phase-A universe: canonical options + conflict matrix.
-    Returns (options, conflicts_by_option, alias_of) or None if not frozen yet."""
+    """Latest frozen universe (v2 preferred, v1 fallback): canonical options +
+    conflict matrix. Returns (options, conflicts_by_option, alias_of) or None."""
     import json
-    f = pathlib.Path("results/universe_v1.json")
+    f = pathlib.Path("results/universe_v2.json")
+    if not f.exists():
+        f = pathlib.Path("results/universe_v1.json")
     if not f.exists():
         return None
     v1 = json.loads(f.read_text())
@@ -79,20 +81,26 @@ def build_items(clinc, clinc_names, universe, conflicts=None, alias_of=None, tex
 
     text_top = None
     if conflicts is not None and text_excl_m:
-        # Phase-B per-item exclusion: drop each text's top-M nearest options
-        # (filter model = mpnet, NOT in the eval roster).
+        # Phase-B per-item exclusion, stage-2 protocol: UNION of two independent
+        # filter models, neither in the eval roster (single-filter exclusion
+        # provably favored the correlated roster model; see wave 3.5).
         import numpy as np
         import torch
         from sentence_transformers import SentenceTransformer
-        fm = SentenceTransformer("sentence-transformers/all-mpnet-base-v2",
-                                 device="mps" if torch.backends.mps.is_available() else "cpu")
-        opt_emb = np.asarray(fm.encode(universe, normalize_embeddings=True, batch_size=64))
-        txt_emb = np.asarray(fm.encode([r["text"] for r in picked],
-                                       normalize_embeddings=True, batch_size=64))
-        sims = txt_emb @ opt_emb.T
-        text_top = [
-            {universe[j] for j in row.argsort()[-text_excl_m:]} for row in sims
-        ]
+        device = "mps" if torch.backends.mps.is_available() else "cpu"
+        text_top = [set() for _ in picked]
+        for fm_id in ("sentence-transformers/all-mpnet-base-v2", "intfloat/e5-large-v2"):
+            fm = SentenceTransformer(fm_id, device=device)
+            prefix_o = "passage: " if "e5" in fm_id else ""
+            prefix_t = "query: " if "e5" in fm_id else ""
+            opt_emb = np.asarray(fm.encode([prefix_o + o for o in universe],
+                                           normalize_embeddings=True, batch_size=64))
+            txt_emb = np.asarray(fm.encode([prefix_t + r["text"] for r in picked],
+                                           normalize_embeddings=True, batch_size=64))
+            sims = txt_emb @ opt_emb.T
+            for i, row in enumerate(sims):
+                text_top[i] |= {universe[j] for j in row.argsort()[-text_excl_m:]}
+            del fm
 
     items = []
     for i, r in enumerate(picked):
@@ -245,6 +253,7 @@ def main():
 
     factories = {
         "bge-large-en-v1.5": lambda: EmbeddingSim(),
+        "gte-large": lambda: EmbeddingSim("thenlper/gte-large"),
         "laya": lambda: (lambda a: (a.set_budgets(2048, 1024), a)[1])(LayaChoice()),
         "gliclass-large-v3.0": lambda: GLiClassZS(),
         "deberta-v3-base-zeroshot-v2.0": lambda: ZeroShotNLI("MoritzLaurer/deberta-v3-base-zeroshot-v2.0"),

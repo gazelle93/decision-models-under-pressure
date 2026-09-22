@@ -45,6 +45,7 @@ MODELS = {
     "deberta-v3-large-zeroshot-v2.0": lambda: make_nli("MoritzLaurer/deberta-v3-large-zeroshot-v2.0"),
     "bart-large-mnli": lambda: make_nli("facebook/bart-large-mnli"),
     "bge-large-en-v1.5": lambda: __import__("harness.models", fromlist=["EmbeddingSim"]).EmbeddingSim(),
+    "gte-large": lambda: __import__("harness.models", fromlist=["EmbeddingSim"]).EmbeddingSim("thenlper/gte-large"),
 }
 
 

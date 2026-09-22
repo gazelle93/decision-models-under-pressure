@@ -24,10 +24,13 @@ class ZeroShotNLI:
         self.revision = getattr(self.pipe.model.config, "_commit_hash", None) or "unpinned"
         self.latency_mode = "bs1"
 
-    def decide(self, text, options, hypothesis_template, question=None):
+    def decide(self, text, options, hypothesis_template, question=None, batch_size=32):
+        """batch_size batches the K premise-hypothesis pairs internally; honest
+        bs=1 latency comes from the dedicated probes, never from accuracy runs."""
         t0 = time.perf_counter()
         out = self.pipe(text, candidate_labels=options,
-                        hypothesis_template=hypothesis_template, multi_label=False)
+                        hypothesis_template=hypothesis_template, multi_label=False,
+                        batch_size=batch_size)
         latency_ms = (time.perf_counter() - t0) * 1000
         score_by_label = dict(zip(out["labels"], out["scores"]))
         return [score_by_label[o] for o in options], latency_ms
