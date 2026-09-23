@@ -51,7 +51,7 @@ def norm(s):
 
 def collect():
     from datasets import load_dataset
-    from .registry import TWITTER_FIN_TOPICS
+    from .labels import TWITTER_FIN_TOPICS
 
     options = {}  # norm -> {raw, sources:set}
     def add(names, source):

@@ -69,6 +69,9 @@ class GLiClassZS:
                 model, tok, classification_type="multi-label", device="cpu")
         self.revision = getattr(model.config, "_commit_hash", None) or "unpinned"
         self.latency_mode = "bs1"
+        self.max_length = getattr(tok, "model_max_length", 1024)
+        self.tok = tok
+        self.last_truncated = False
 
     def decide(self, text, options, hypothesis_template=None, question=None):
         """Post-review fix: the single-label pipeline returns only the argmax,
@@ -78,6 +81,10 @@ class GLiClassZS:
         the sigmoid and softmaxing reconstructs the exact single-label
         distribution from raw scores."""
         import math
+        # GLiClass puts labels BEFORE the text, so overflow cuts the TEXT.
+        n_tok = len(self.tok(text, add_special_tokens=False)["input_ids"])
+        n_opt = sum(len(self.tok(o, add_special_tokens=False)["input_ids"]) + 2 for o in options)
+        self.last_truncated = (n_tok + n_opt) > self.max_length
         t0 = time.perf_counter()
         res = self.pipe(text, list(options), threshold=0.0)[0]
         latency_ms = (time.perf_counter() - t0) * 1000
@@ -101,6 +108,9 @@ class LayaChoice:
         self.agent = laya.load(model_id)
         self.default_max_len = self.agent.cfg.get("max_len", 512)
         self.default_head_max_len = self.agent.cfg.get("head_max_len", 192)
+        self.last_truncated = False
+        self.last_text_tokens = None
+        self.last_seq_tokens = None
         self.revision = "unpinned"
         self.latency_mode = "bs1"
 
@@ -134,14 +144,25 @@ class LayaChoice:
 
         agent = self.agent
         t0 = time.perf_counter()
+        # criteria as a LIST, not {o: o}. The dict form hits render_options'
+        # non-empty-value branch and emits "transfer: transfer", doubling option
+        # tokens; at K=256 that overflowed the budget and collapsed 10 options
+        # into 4 indistinguishable stubs while the marker COUNT stayed at 256,
+        # so the guard below never fired (review F7).
         qi = agent._to_internal({"type": "choice",
                                  "instructions": question or "Which option best describes this text?",
-                                 "criteria": {o: o for o in options}})
+                                 "criteria": list(options)})
         max_len = agent.cfg.get("max_len", 512)
         hml = agent.cfg.get("head_max_len", 192)
         seq, markers = build_sequence(agent.tok, {"text": text}, qi, max_len, hml)
         if len(markers) != len(render_options(qi)):
             raise ValueError(f"options exceed head_max_len={hml}")
+        # Amendment 2: truncation must be observable, not inferred. Compare the
+        # untruncated token cost against what actually fit.
+        full = len(agent.tok(text, add_special_tokens=False)["input_ids"])
+        self.last_truncated = len(seq) >= max_len
+        self.last_text_tokens = full
+        self.last_seq_tokens = len(seq)
         items = [{"ids": seq, "markers": markers, "qtype": QTYPES["choice"]}]
         b = collate_items([items], agent.tok.pad_token_id)
         with torch.no_grad():

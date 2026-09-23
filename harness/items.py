@@ -37,7 +37,7 @@ def build_items(n, alias_of, max_n=500, log=print):
     out["goemotions"] = [{"text": r["text"], "gold": norm(gnames[r["labels"][0]]),
                           "source": "go_emotions"} for r in picked]
 
-    from .registry import TWITTER_FIN_TOPICS
+    from .labels import TWITTER_FIN_TOPICS
     ft = load_dataset("zeroshot/twitter-financial-news-topic", split="validation")
     picked = random.Random(SEED).sample(list(ft), max_n)[:n]
     out["fintopic"] = [{"text": r["text"], "gold": norm(TWITTER_FIN_TOPICS[r["label"]]),

@@ -1,166 +1,113 @@
-# Stage-2 pre-registration — Decision Models Under Pressure
+# Pre-registration — Decision Models Under Pressure
 
-STATUS: APPROVED by Mingyou 2026-09-22 (in-session) — BINDING. Jev arm deferred (no API credentials). Written 2026-09-22, before any
-stage-2 inference. Deviations go in a deviations log, not in silent edits.
+Status: **BINDING** from 2026-09-23. Written before any inference on dataset
+v3. Supersedes all earlier versions; deviations go in `EXPERIMENTS.md` under a
+dated heading, never as a silent edit.
 
-## Scope
+Data: the frozen `dataset/v3/`, loaded through `harness.dataset.load_rq`.
+Checksums in `dataset/v3/manifest.json`. Gate status in
+`dataset/v3/gates.json` — **G3 is open** and its per-cell magnitude is
+reported beside every accuracy table.
 
-Confirmatory runs for RQ1 (K-scaling), RQ2 (order sensitivity), RQ3
-(distractor hardness) over as-shipped systems. Pilot evidence (waves 1-3.5,
-n=50) generated the hypotheses; none of it counts toward confirmation.
+## Roster
 
-## Roster (two models per class)
+Two models per family, so no class claim rests on one checkpoint.
 
-- A1 pair cross-encoders: deberta-v3-base-zeroshot-v2.0; deberta-v3-large-
-  zeroshot-v2.0 (large runs full at K<=64; 150-item subsample at K in
-  {128,256} — cost, pre-registered).
-- A2 embedding scorers: bge-large-en-v1.5; thenlper/gte-large.
-- A3 option-conditioned: laya (extended ctx 2048/1024, direct-forward
-  adapter); gliclass-large-v3.0 (raw-distribution adapter).
-- Jev appended when API credentials exist (K capped at its 255-option API
-  limit; hosted latency in its own column; rung ungradable).
-- bart-large-mnli dropped: HF-default reference only, below majority on 2/6
-  pilot sets; keeping it adds cost, not information.
+- **A1** pair cross-encoders: `deberta-v3-base-zeroshot-v2.0`,
+  `deberta-v3-large-zeroshot-v2.0` (large runs full at K ≤ 64 and a fixed
+  150-item prefix above, on the same prefix at every K so slopes stay paired)
+- **A2** embedding scorers: `bge-large-en-v1.5`, `thenlper/gte-large`
+- **A3** option-conditioned: `convaiinnovations/laya`, `gliclass-large-v3.0`
+- **Jev** appended to A3 when credentials exist: K ≤ 64, hosted latency in its
+  own column, calibration flagged rounding-limited (2-decimal API), rung
+  ungradable.
 
-## AMENDMENT 1 (2026-09-23): fin-topic excluded from RQ3; Jev-arm constraints
+## RQ1 — cardinality × text length
 
-**fin-topic is dropped from the confirmatory tier contrast (C2/RQ3).** It is
-retained in the built dataset and reported as exploratory only. Reasons, all
-measured before the decision:
-- Worst text-free-gold-picker cell in the suite: 0.280 at far tier vs 0.0625
-  chance (4.5x), against CLINC's 0.185 and GoEmotions' 0.150. The cause is
-  structural and unfixable with a natural label universe: fin-topic's label
-  grammar ('gold or metals or materials', 'treasuries or corporate debt') has
-  no dense surface stratum to match a far tier into. Both candidate remedies
-  were tried and rejected (coarser strata reopen the format gate at AUC 0.681;
-  dropping thin-stratum items costs 90/200 items and makes the picker worse).
-- The semantic audit found the taxonomy self-contradictory on its own items
-  (two same-shape items labelled 'legal or regulation' and 'general news or
-  opinion'), 14% strict near-tier ambiguity, and unanswerable items ('#OOTT').
-- 'general news or opinion' is a residual hypernym that is ALSO a legitimate
-  gold class, so it cannot be removed as a magnet; everything leaks into it.
+Domains clinc, mtop, goemotions, dbpedia. Pool `ext`. K ∈ {2,4,8,16,32,64,128,256}.
 
-RQ3 therefore runs on CLINC + GoEmotions. Two domains is thin, and that is
-stated as a limitation rather than papered over with a domain we do not trust.
-Note the two have COMPLEMENTARY contamination, which is itself worth
-reporting: CLINC is G3 for Laya (intent is a trained family) and G4 for the
-deberta line; GoEmotions is G3 for the deberta line (three emotion datasets in
-its v1.1 mixture) and G4* for Laya. No domain in this space is clean for every
-family at once.
+DBpedia is included **untruncated** and supplies the length range (128 → 1300
+chars p10→p90, a 10× spread *within* one domain) against clinc/mtop ~34–38.
+Every item carries `text_chars`.
 
-fin-topic REMAINS in RQ2 (order sensitivity) as a supporting domain, since
-flip rate is measured across permutations of an identical option set, where a
-format shortcut is constant within the item. It is excluded from RQ1 headline
-K-curves for the same inflation reason as RQ3.
+Report accuracy vs log₂K, vs length quartile, and the K × length interaction.
 
-**Jev-arm constraints (when credentials exist).** The dataset is frozen before
-any Jev call, because Jev calls are not re-runnable, cost money, and burn the
-items into the reserve list the moment they are sent. Consequences:
-- Send only cells we trust: CLINC + GoEmotions, K <= 64 (well inside Jev's
-  255-option API cap).
-- Jev rounds probabilities to 2 decimals, so its NLL/Brier/ECE are
-  rounding-limited and flagged as such; accuracy and flip rate are unaffected.
-- Hosted latency stays in its own column and is never compared to local bs=1.
-- Rung: ungradable (training data undisclosed).
+Pre-recorded validity notes:
+- DBpedia's text-free-picker residual (0.245–0.260) is uncorrelated with text
+  length within the domain (r = −0.089, p = 0.21), so it inflates the accuracy
+  *level* and cannot manufacture a length effect.
+- **Truncation is logged per call.** Long texts with 255 options will exhaust
+  some context budgets; that is a real interaction, but unlogged it is
+  indistinguishable from a capability finding.
+- CLINC's gold-string leakage (25%) interacts with K, so its curves are
+  reported split by the `leaked` flag.
 
-## AMENDMENT 2 (2026-09-23, before any inference on dataset v3)
+## RQ2 — order sensitivity
 
-**RQ1 becomes a two-factor design: K x TEXT LENGTH.** Domains: clinc, mtop,
-goemotions, dbpedia (fin-topic excluded per Amendment 1). DBpedia is included
-UNTRUNCATED and supplies the length range: 128 -> 1300 chars p10->p90, a 10x
-spread within one domain, against clinc/mtop ~34-38 median. Every item carries
-`text_chars`. Analyses report accuracy vs log2 K, vs length quartile, and the
-K x length interaction.
-  - Validity note recorded in advance: DBpedia's text-free-picker residual
-    (0.245-0.260) is UNCORRELATED with text length within the domain
-    (r=-0.089, p=0.21), so it inflates the accuracy level but cannot
-    manufacture a length effect.
-  - MANDATORY instrumentation: every call logs whether the model truncated its
-    input. Long texts with 255 options will exhaust some context budgets; that
-    is a real K x length interaction, but unlogged it is indistinguishable from
-    a capability finding, which is exactly how defect F7 produced a false Laya
-    context cliff.
+Domains clinc, goemotions, fintopic, mtop. Tiers near and far. K ∈ {16, 64},
+5 permutations per item.
 
-**RQ3 domains become CLINC + MTOP.** MTOP has the strongest measured tier
-separation in the suite (+0.342 vs clinc +0.239) because its 102 intents
-cluster into 11 real domains, giving same-object/different-verb near bands that
-CLINC's flat taxonomy cannot. Its far tier is the cleanest measured
-(text-free picker 0.060). Pre-registered caveats: MTOP is G3 for BOTH model
-families, so it adds no rung diversity; GoEmotions is dropped from RQ3 and may
-be re-added only as a declared amendment, not silently.
+fin-topic is retained here alone: flip rate compares permutations of one
+identical option set, so a format shortcut is constant within the item and can
+neither manufacture nor mask order sensitivity.
 
-**RQ2 domains: clinc, goemotions, fintopic, mtop** (unchanged rationale: flip
-rate compares permutations of one identical option set).
+**C1.** Per A3 model, claim "residual order tax under 5%" only if the 95%
+bootstrap CI upper bound on flip rate is below 0.05. A1 and A2 are structurally
+order-invariant; their measured rate is a harness check, and any non-zero value
+must be explained (exact score ties are a known, benign cause).
 
-**K ceilings.** Tier contrasts (RQ2/RQ3) run to K=64; the `near` band must stay
-near, and 63 distractors is 12% of a 902-option universe. RQ1 runs to K=256 on
-the single `ext` pool, where no tier contrast is claimed.
+Items whose permutation set is incomplete are excluded from the rate, and the
+count of failed permutations is reported — dropping them silently biases flip
+rates downward, the direction that makes this contrast easier to pass.
 
-**Data source.** All runs read the frozen `dataset/v3/` via
-`harness.dataset.load_rq`, never a rebuild. Checksums are in
-`dataset/v3/manifest.json`. The open gate (G3) is reported per cell beside
-every accuracy table.
+## RQ3 — distractor hardness
 
-## Items
+Domains clinc, mtop. Tiers near and far, paired on the same items.
+K ∈ {2,4,8,16,32,64}.
 
-- Gold domains x 500 items each, fresh draws (seed 101): CLINC-150 intents
-  (test split MINUS the 50 pilot items), GoEmotions single-label rows,
-  twitter-financial-news-topic (validation).
-- Rung annotation per (model, domain); CLINC is G3 for Laya (trained family)
-  and stated as such wherever cited.
-- Universe: frozen universe_v2.json (537 canonical options, 100 conflicts,
-  8 aliases). Per-item exclusion: conflict matrix + UNION of top-10
-  text-nearest options from TWO filter models (all-mpnet-base-v2,
-  intfloat/e5-large-v2 with query/passage prefixes) — neither in the roster.
+MTOP carries this question: strongest measured tier separation in the suite
+(+0.342 vs CLINC's +0.239), because its 102 intents cluster into 11 real
+domains. Pre-recorded caveat: MTOP is **G3 for both families** (intent is
+trained for deberta via MASSIVE/Banking77 and for Laya via support triage), so
+it adds no rung diversity. GoEmotions may be re-added only as a dated amendment.
 
-## Conditions
+**C2 — does option–option attention help against near distractors?**
+Δ_family = acc_far − acc_near at K ∈ {16, 32, 64}.
+- **SUPPORTED** iff Δ_A3 < Δ_A1 and Δ_A3 < Δ_A2, with 95% CIs on the
+  differences excluding 0, at ≥2 of 3 K values.
+- **FALSIFIED** iff Δ_A3 ≥ Δ_A2 at all three K with CI support.
+- Anything else is reported as mixed.
 
-- K grid (confirmatory): {2, 4, 8, 16, 32, 64, 128, 256}. K=512+ exploratory
-  only, pending universe v3.
-- Distractor tiers: FAR (outside the gold's source dataset), NEAR (same-source
-  siblings minus conflicts), MIXED (uniform draw, pilot-comparable). Each tier
-  reports its distractor-to-gold cosine distribution (computed by BOTH filter
-  models; committed script).
-- Order: 5 permutations per item at K in {16, 64}; CRC32-stable seeds.
-- NLI accuracy cells use internal pair-batching (batch_size 32); bs=1 latency
-  comes only from dedicated probes.
+Pre-recorded counter-signal: in pilot work the option-conditioned models were
+*more* near-sensitive, not less. Both outcomes are publishable; neither is a
+surprise to be explained away afterwards.
 
-## Pre-registered contrasts and decision rules
+**Within-family variance is reported before any between-family claim.** If the
+two A3 models differ more from each other than the families differ, C2 is
+reported as inapplicable — the architecture class would not be the operative
+variable.
 
-C1 — Residual order tax (RQ2). Pooled 1,500 items x 5 orders at K=16, clean
-near+far sets. Per A3 model: claim "residual tax under 5%" iff the 95%
-bootstrap CI upper bound on flip rate < 0.05. Structural-zero classes (A1,
-A2) reported as harness checks.
+**C3 — K-curve separation.** Slope of accuracy vs log₂K per family, far tier,
+with bootstrap CIs on pairwise slope differences. Descriptive; no binary rule.
 
-C2 — H3, option-option attention vs near distractors (RQ3). Delta_c =
-acc_far - acc_near per class at K in {16, 32, 64} (below the A3 context
-ceiling). H3 SUPPORTED iff Delta_A3 < Delta_A2 AND Delta_A3 < Delta_A1 with
-95% CIs on the differences excluding 0 at >=2 of 3 K values. H3 FALSIFIED iff
-Delta_A3 >= Delta_A2 at all three K with CI support. Anything else: mixed,
-reported as such. (Pilot counter-signal on record: Laya was the most
-near-density-sensitive model at K>=128, ceiling-confounded.)
+## Metrics and analysis
 
-C3 — K-curve class separation (RQ1). Slope of accuracy vs log2 K per class,
-FAR tier, K 16->256; bootstrap CIs on pairwise slope differences. Descriptive:
-no binary rule, CIs speak.
-
-Secondary (reported, not confirmatory): macro-F1, top-3/5, NLL, Brier,
-ECE-15 beside accuracy; calibration-vs-K; gold-in-support rates; latency
-(direct-forward and wrapper separately for laya); chance + majority baselines
-on every table, skewed sets as lift.
-
-## Analysis
-
-Bootstrap 2,000 resamples over items; paired comparisons (identical items
-across models); McNemar for pairwise accuracy at fixed cells. Per-item JSONL
-retained and versioned.
+Accuracy, top-3/5, NLL, Brier, 15-bin ECE **reported beside accuracy, never
+alone**, plus chance and majority baselines on every table; skewed domains are
+reported as lift over majority. Per-item JSONL at full precision. Bootstrap
+2,000 resamples over items; paired comparisons on identical items; McNemar for
+pairwise accuracy at fixed cells. Latency: local batch-1 and hosted end-to-end
+never share a column, and wrapper overhead is separated from model time.
 
 ## Ladder and stopping
 
-N=200/domain first; a contrast may be dropped only when its CI excludes the
-interesting effect; otherwise complete to 500/domain. Estimated compute:
-1-2 days background on this machine.
+n=200 per domain first, then 500. Items nest by construction (the draw is taken
+once at max_n and truncated). A contrast may be dropped only when its CI
+excludes the interesting effect; otherwise complete to 500.
 
-## Sign-off
+## What would make this study uninteresting
 
-- [x] Mingyou approval (date): 2026-09-22
+Stated in advance so it cannot be rationalised later: if every family lands
+within CI of the others on all three questions, the finding is that
+architecture does not matter at this scale for these tasks — and that is the
+result we publish.
