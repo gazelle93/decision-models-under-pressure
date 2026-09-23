@@ -22,6 +22,47 @@ n=50) generated the hypotheses; none of it counts toward confirmation.
 - bart-large-mnli dropped: HF-default reference only, below majority on 2/6
   pilot sets; keeping it adds cost, not information.
 
+## AMENDMENT 1 (2026-09-23): fin-topic excluded from RQ3; Jev-arm constraints
+
+**fin-topic is dropped from the confirmatory tier contrast (C2/RQ3).** It is
+retained in the built dataset and reported as exploratory only. Reasons, all
+measured before the decision:
+- Worst text-free-gold-picker cell in the suite: 0.280 at far tier vs 0.0625
+  chance (4.5x), against CLINC's 0.185 and GoEmotions' 0.150. The cause is
+  structural and unfixable with a natural label universe: fin-topic's label
+  grammar ('gold or metals or materials', 'treasuries or corporate debt') has
+  no dense surface stratum to match a far tier into. Both candidate remedies
+  were tried and rejected (coarser strata reopen the format gate at AUC 0.681;
+  dropping thin-stratum items costs 90/200 items and makes the picker worse).
+- The semantic audit found the taxonomy self-contradictory on its own items
+  (two same-shape items labelled 'legal or regulation' and 'general news or
+  opinion'), 14% strict near-tier ambiguity, and unanswerable items ('#OOTT').
+- 'general news or opinion' is a residual hypernym that is ALSO a legitimate
+  gold class, so it cannot be removed as a magnet; everything leaks into it.
+
+RQ3 therefore runs on CLINC + GoEmotions. Two domains is thin, and that is
+stated as a limitation rather than papered over with a domain we do not trust.
+Note the two have COMPLEMENTARY contamination, which is itself worth
+reporting: CLINC is G3 for Laya (intent is a trained family) and G4 for the
+deberta line; GoEmotions is G3 for the deberta line (three emotion datasets in
+its v1.1 mixture) and G4* for Laya. No domain in this space is clean for every
+family at once.
+
+fin-topic REMAINS in RQ2 (order sensitivity) as a supporting domain, since
+flip rate is measured across permutations of an identical option set, where a
+format shortcut is constant within the item. It is excluded from RQ1 headline
+K-curves for the same inflation reason as RQ3.
+
+**Jev-arm constraints (when credentials exist).** The dataset is frozen before
+any Jev call, because Jev calls are not re-runnable, cost money, and burn the
+items into the reserve list the moment they are sent. Consequences:
+- Send only cells we trust: CLINC + GoEmotions, K <= 64 (well inside Jev's
+  255-option API cap).
+- Jev rounds probabilities to 2 decimals, so its NLL/Brier/ECE are
+  rounding-limited and flagged as such; accuracy and flip rate are unaffected.
+- Hosted latency stays in its own column and is never compared to local bs=1.
+- Rung: ungradable (training data undisclosed).
+
 ## Items
 
 - Gold domains x 500 items each, fresh draws (seed 101): CLINC-150 intents
