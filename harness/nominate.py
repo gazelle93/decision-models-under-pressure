@@ -14,7 +14,11 @@ from __future__ import annotations
 import json
 import pathlib
 
-COS_T = 0.60
+COS_T = 0.60        # cross-source threshold
+COS_T_SAME = 0.75   # same-source threshold: siblings are meant to be close, so
+                    # only near-interchangeable ones are nominated (review S3:
+                    # v2 exempted same-source entirely, leaving the whole NEAR
+                    # tier unadjudicated)
 STOP = {"the", "a", "an", "of", "by", "to", "in", "for", "and", "or", "not", "no",
         "my", "your", "is", "are", "on", "at", "with", "about", "up", "after",
         "into", "get", "getting"}
@@ -36,23 +40,35 @@ def main():
     sims = emb @ emb.T
     toks = {k: set(t for t in k.split() if t not in STOP) for k in keys}
 
+    def contains(a, b):
+        """Whole-word containment. v2 guarded on `toks[a] and toks[b]`, which
+        skipped any option whose tokens are all stopwords — 'no' vs
+        'no waivers'/'no defaults'/'no conflicts' all escaped (review, Low)."""
+        wa, wb = a.split(), b.split()
+        if len(wa) == len(wb):
+            return False
+        short, long_ = (wa, wb) if len(wa) < len(wb) else (wb, wa)
+        return all(w in long_ for w in short)
+
     noms = []
     for i in range(len(keys)):
         for j in range(i + 1, len(keys)):
             a, b = keys[i], keys[j]
-            if src[a] & src[b]:
-                continue  # same-source exempt
+            same = bool(src[a] & src[b])
             cos = float(sims[i, j])
-            contain = bool(toks[a] and toks[b] and (toks[a] <= toks[b] or toks[b] <= toks[a]))
-            if cos >= COS_T or contain:
-                noms.append({"cos": round(cos, 3), "contain": contain, "a": a, "b": b,
-                             "src_a": sorted(src[a]), "src_b": sorted(src[b])})
+            contain = contains(a, b)
+            thr = COS_T_SAME if same else COS_T
+            if cos >= thr or contain:
+                noms.append({"cos": round(cos, 3), "contain": contain, "same_source": same,
+                             "a": a, "b": b, "src_a": sorted(src[a]), "src_b": sorted(src[b])})
     noms.sort(key=lambda r: -r["cos"])
-    lines = [f"# Cross-source conflict nominations (rule: cos>={COS_T} OR token containment; "
-             "same-source pairs exempt — source datasets pre-adjudicate their own labels)", ""]
+    lines = [f"# Conflict nominations. CROSS-source: cos>={COS_T} or containment. "
+             f"SAME-source: cos>={COS_T_SAME} or containment (v3: same-source is no longer "
+             "exempt — it is exactly the NEAR tier).", ""]
     for r in noms:
         tag = "CONTAIN" if r["contain"] else "       "
-        lines.append(f"- [{r['cos']:.3f}] {tag}  {r['a']!r} ({'/'.join(r['src_a'])})  vs  "
+        scope = "SAME" if r["same_source"] else "CROSS"
+        lines.append(f"- [{r['cos']:.3f}] {scope:5s} {tag}  {r['a']!r} ({'/'.join(r['src_a'])})  vs  "
                      f"{r['b']!r} ({'/'.join(r['src_b'])})")
     pathlib.Path("results/universe_cross_nominations.md").write_text("\n".join(lines))
     print(f"{len(noms)} nominations written")

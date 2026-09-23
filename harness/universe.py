@@ -30,10 +30,23 @@ def log(msg):
 
 
 def norm(s):
-    s = s.lower().replace("_", " ").replace("-", " ").strip()
-    s = re.sub(r"\s+", " ", s)
-    s = re.sub(r"[^\w\s&|]", "", s)
-    return s.strip()
+    """Word-boundary-preserving normalizer.
+
+    v2 lowercased BEFORE splitting, destroying CamelCase and dot boundaries:
+    'AmusementParkAttraction' -> 'amusementparkattraction',
+    'comp.sys.ibm.pc.hardware' -> 'compsysibmpchardware'. 92 of 537 options
+    were mangled, and because the mangled sources are structurally FAR-only
+    this produced a format tell that let a text-free classifier locate the
+    gold (review 2026-09-23, F1). Split first, then lowercase.
+    """
+    s = str(s)
+    s = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", s)       # camelCase -> camel Case
+    s = re.sub(r"(?<=[A-Z])(?=[A-Z][a-z])", " ", s)     # HTTPServer -> HTTP Server
+    for ch in "_-./\\":
+        s = s.replace(ch, " ")
+    s = s.lower()
+    s = re.sub(r"[^\w\s&|]", " ", s)
+    return re.sub(r"\s+", " ", s).strip()
 
 
 def collect():
@@ -68,6 +81,8 @@ def collect():
         add(db.features["label"].names, "dbpedia14")
     except Exception:
         log("  dbpedia FAILED")
+    FAILED = []
+
     def add_source(hf_id, cfg, split, src, feat=None):
         """Generic label extraction: ClassLabel names, else label_text uniques,
         else string-label uniques on `feat` or 'label'."""
@@ -85,6 +100,7 @@ def collect():
             else:
                 log(f"  {src}: no usable label column, skipped")
         except Exception:
+            FAILED.append(src)
             log(f"  {src} FAILED: " + traceback.format_exc(limit=1).strip().splitlines()[-1])
 
     for hf_id, cfg, split, src, feat in [
@@ -100,14 +116,30 @@ def collect():
         ("fancyzhx/ag_news", None, "test", "ag_news", "label"),
         ("yahoo_answers_topics", None, "test", "yahoo", "topic"),
         ("sonos-nlu-benchmark/snips_built_in_intents", None, "train", "snips", "label"),
+        # v3 growth: bucket supply was the binding constraint on format-neutral
+        # sampling (a 532-option universe cannot fill a gold's surface stratum
+        # at K=64), so breadth here directly buys gate headroom.
+        ("DeveloperOats/DBPedia_Classes", None, "test", "dbpedia_l3", "l3"),
+        ("mteb/amazon_massive_scenario", "en", "test", "massive_scenario", None),
+        ("dair-ai/emotion", None, "test", "dair_emotion", "label"),
+        ("SetFit/TREC-QC", None, "test", "trec_qc", "label_text"),
+        ("knowledgator/events_classification_biotech", None, "test", "biotech", "label"),
+        ("mteb/mtop_domain", "en", "test", "mtop_domain", None),
+        ("clinc/clinc_oos", "small", "test", "clinc_domain", "domain"),
+        ("PolyAI/banking77", None, "test", "b77_alt", "label"),
     ]:
         add_source(hf_id, cfg, split, src, feat)
+    if FAILED:
+        log(f"  NOTE {len(FAILED)} sources failed to load and are EXCLUDED: {FAILED}")
+        log("  (recorded in the universe manifest; not silently dropped)")
+    options["__failed_sources__"] = {"raw": ",".join(FAILED), "sources": set()}
     return options
 
 
 def main():
     OUT.mkdir(exist_ok=True)
     options = collect()
+    failed = options.pop("__failed_sources__", {"raw": ""})["raw"]
     keys = sorted(options)
     log(f"universe candidates after exact dedupe: {len(keys)}")
 
@@ -164,6 +196,7 @@ def main():
         "filter_model": "sentence-transformers/all-mpnet-base-v2",
         "flag_threshold": FLAG_T, "auto_merge_threshold": AUTO_MERGE_T,
         "n_options": len(keys),
+        "failed_sources": [s for s in failed.split(",") if s],
         "options": {k: {"raw": v["raw"], "sources": sorted(v["sources"])} for k, v in options.items()},
         "flagged_pairs": [{"cos": round(s, 4), "a": a, "b": b} for s, a, b in flagged],
     }, indent=1))
