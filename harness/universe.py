@@ -83,16 +83,22 @@ def collect():
         log("  dbpedia FAILED")
     FAILED = []
 
+    STRIP_PREFIX = {"mtop": "IN:"}   # MTOP ships IN:GET_WEATHER; the colon would
+                                     # normalize to a shared leading token "in"
+                                     # on all 102 labels -> perfect tier signal.
+
     def add_source(hf_id, cfg, split, src, feat=None):
         """Generic label extraction: ClassLabel names, else label_text uniques,
         else string-label uniques on `feat` or 'label'."""
         try:
             ds = load_dataset(hf_id, cfg, split=split)
             col = feat or ("label_text" if "label_text" in ds.features else "label")
+            pre = STRIP_PREFIX.get(src)
             if col in ds.features and hasattr(ds.features[col], "names"):
-                add(ds.features[col].names, src)
+                names = ds.features[col].names
+                add([n.replace(pre, "") for n in names] if pre else names, src)
             elif col in ds.features:
-                vals = {str(r[col]) for r in ds}
+                vals = {str(r[col]).replace(pre, "") if pre else str(r[col]) for r in ds}
                 if all(not v.lstrip("-").isdigit() for v in list(vals)[:20]):
                     add(vals, src)
                 else:
@@ -109,13 +115,13 @@ def collect():
         ("Davlan/sib200", "eng_Latn", "test", "sib200", "category"),
         # stage-2 growth (2026-09-22): toward 600+ canonical options
         ("mteb/amazon_massive_intent", "en", "test", "massive", None),
-        ("mteb/mtop_intent", "en", "test", "mtop", None),
         ("DeepPavlov/hwu64", None, "test", "hwu64", None),
         ("DeveloperOats/DBPedia_Classes", None, "test", "dbpedia_l2", "l2"),
         ("CogComp/trec", None, "test", "trec_fine", "fine_label"),
         ("fancyzhx/ag_news", None, "test", "ag_news", "label"),
         ("yahoo_answers_topics", None, "test", "yahoo", "topic"),
         ("sonos-nlu-benchmark/snips_built_in_intents", None, "train", "snips", "label"),
+        ("WillHeld/mtop", None, "test_en", "mtop", "intent"),
         # v3 growth: bucket supply was the binding constraint on format-neutral
         # sampling (a 532-option universe cannot fill a gold's surface stratum
         # at K=64), so breadth here directly buys gate headroom.
@@ -123,10 +129,7 @@ def collect():
         ("mteb/amazon_massive_scenario", "en", "test", "massive_scenario", None),
         ("dair-ai/emotion", None, "test", "dair_emotion", "label"),
         ("SetFit/TREC-QC", None, "test", "trec_qc", "label_text"),
-        ("knowledgator/events_classification_biotech", None, "test", "biotech", "label"),
-        ("mteb/mtop_domain", "en", "test", "mtop_domain", None),
         ("clinc/clinc_oos", "small", "test", "clinc_domain", "domain"),
-        ("PolyAI/banking77", None, "test", "b77_alt", "label"),
     ]:
         add_source(hf_id, cfg, split, src, feat)
     if FAILED:

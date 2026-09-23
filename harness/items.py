@@ -43,6 +43,17 @@ def build_items(n, alias_of, max_n=500, log=print):
     out["fintopic"] = [{"text": r["text"], "gold": norm(TWITTER_FIN_TOPICS[r["label"]]),
                         "source": "fin_topics"} for r in picked]
 
+    db = load_dataset("DeveloperOats/DBPedia_Classes", split="test")
+    picked = random.Random(SEED).sample(list(range(len(db))), max_n)[:n]
+    out["dbpedia"] = [{"text": db[i]["text"], "gold": norm(db[i]["l2"]),
+                       "source": "dbpedia_l2"} for i in picked]
+
+    mt = load_dataset("WillHeld/mtop", split="test_en")
+    picked = random.Random(SEED).sample(list(range(len(mt))), max_n)[:n]
+    out["mtop"] = [{"text": mt[i]["utterance"],
+                    "gold": norm(mt[i]["intent"].replace("IN:", "")),
+                    "source": "mtop", "mtop_domain": mt[i]["domain"]} for i in picked]
+
     for d, items in out.items():
         keep = []
         for j, it in enumerate(items):
@@ -50,7 +61,10 @@ def build_items(n, alias_of, max_n=500, log=print):
             it["uid"] = f"{d}:{j}"
             it["gold"] = alias_of.get(it["gold"], it["gold"])
             it["leaked"] = it["gold"] in it["text"].lower()
+            it["text_chars"] = len(it["text"])          # RQ1 second factor
             keep.append(it)
         out[d] = keep
-        log(f"  {d}: n={len(keep)}, leakage {sum(x['leaked'] for x in keep)/len(keep):.1%}")
+        L = sorted(x["text_chars"] for x in keep)
+        log(f"  {d}: n={len(keep)}, leakage {sum(x['leaked'] for x in keep)/len(keep):.1%}, "
+            f"text chars median {L[len(L)//2]} p90 {L[int(len(L)*0.9)]}")
     return out

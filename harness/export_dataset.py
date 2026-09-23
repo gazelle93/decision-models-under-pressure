@@ -43,6 +43,8 @@ def main():
                     "uid": it["uid"], "domain": domain, "text": it["text"],
                     "gold": it["gold"], "source": it["source"],
                     "leaked": it["leaked"],
+                    "text_chars": it["text_chars"],
+                    **({"mtop_domain": it["mtop_domain"]} if "mtop_domain" in it else {}),
                     "max_gold_sim_near": round(it["max_gold_sim_near"], 4),
                     "max_gold_sim_far": round(it["max_gold_sim_far"], 4),
                     "distractors": {k: v for k, v in it["tiers"].items()},
@@ -53,11 +55,11 @@ def main():
     # ---- items.csv (flat, for inspection)
     with (out / "items.csv").open("w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["uid", "domain", "text", "gold", "source", "leaked",
+        w.writerow(["uid", "domain", "text", "gold", "source", "leaked", "text_chars",
                     "n_near", "n_far", "max_gold_sim_near", "max_gold_sim_far"])
         for r in rows:
             w.writerow([r["uid"], r["domain"], r["text"], r["gold"], r["source"],
-                        int(r["leaked"]), len(r["distractors"]["near"]),
+                        int(r["leaked"]), r["text_chars"], len(r["distractors"]["near"]),
                         len(r["distractors"]["far"]),
                         r["max_gold_sim_near"], r["max_gold_sim_far"]])
 
@@ -65,24 +67,41 @@ def main():
     # canonical item record and no way for the splits to drift from it.
     SPLITS = {
         "rq1_kscaling": {
-            "domains": ["clinc", "goemotions"],
+            "domains": ["clinc", "mtop", "goemotions", "dbpedia"],
             "tiers": ["ext"], "k_grid": [2, 4, 8, 16, 32, 64, 128, 256],
-            "why": "fin-topic excluded (Amendment 1): its format residual inflates "
-                   "accuracy level. Single 'ext' pool; no tier contrast here.",
+            "factors": ["K", "text_length"],
+            "why": "Analysed on TWO factors: candidate-set size K and text length. "
+                   "DBpedia is included UNTRUNCATED and supplies the length range "
+                   "(p10 128 -> p90 1300 chars, a 10x spread INSIDE one domain) "
+                   "against clinc/mtop ~34-38 median. Its text-free-picker residual "
+                   "(0.245-0.260) inflates the accuracy LEVEL, but is uncorrelated "
+                   "with text length within the domain (r=-0.089, p=0.21), so the "
+                   "length factor is unconfounded by it. Long texts plus 255 options "
+                   "will truncate some models' context: that is a measurable "
+                   "interaction, not a bug, and truncation must be logged per call. "
+                   "fin-topic excluded (Amendment 1).",
         },
         "rq2_order": {
-            "domains": ["clinc", "goemotions", "fintopic"],
+            "domains": ["clinc", "goemotions", "fintopic", "mtop"],
             "tiers": ["near", "far"], "k_grid": [16, 64],
             "why": "fin-topic RETAINED: flip rate compares permutations of one "
                    "identical option set, so a format shortcut is constant within "
                    "the item and cannot manufacture or mask order sensitivity.",
         },
         "rq3_hardness": {
-            "domains": ["clinc", "goemotions"],
+            "domains": ["clinc", "mtop"],
             "tiers": ["near", "far"], "k_grid": [2, 4, 8, 16, 32, 64],
-            "why": "fin-topic excluded (Amendment 1): worst text-free-picker cell "
-                   "(0.280 vs 0.0625 chance), self-contradictory taxonomy, and a "
-                   "hypernym class that is also a legitimate gold.",
+            "why": "CLINC retained; MTOP added. MTOP has the strongest measured "
+                   "tier separation in the suite (+0.342 vs clinc +0.239) because "
+                   "its 102 intents cluster into 11 real domains, so near-band "
+                   "siblings are same-object/different-verb (create/delete/get/"
+                   "snooze alarm) -- the dense structure CLINC's flat multi-domain "
+                   "taxonomy lacks. Its far tier is also the cleanest in the suite "
+                   "(text-free picker 0.060, under the 0.125 gate). Caveat to "
+                   "report: MTOP is G3 for BOTH model families (intent is trained "
+                   "for deberta via MASSIVE/Banking77 and for Laya via support "
+                   "triage), so it adds no rung diversity; GoEmotions can be "
+                   "re-added if a G4*-for-Laya domain is wanted.",
         },
     }
     splits_dir = out / "splits"

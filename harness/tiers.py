@@ -20,6 +20,31 @@ import pathlib
 import random
 from collections import defaultdict
 
+# Sources a domain's items must never draw distractors from, because the two
+# label sets are the SAME taxonomy at different granularity. DBpedia L2 golds
+# ('politician') are formal parents of L3 labels ('primeminister'), so an L3
+# option is frequently a MORE correct answer than the gold — and its surface
+# form is systematically different, which handed a text-free classifier 13.1x
+# chance at K=64 before this exclusion.
+DOMAIN_SOURCE_BANS = {
+    "dbpedia": {"dbpedia14"},    # duplicate coarse taxonomy of the same entities
+}
+
+
+def dbpedia_hierarchy():
+    """L2 gold -> its L3 children. Banning ALL L3 was tried and rejected: it
+    gutted the pool and pushed the format gate from 0.534 to 0.637. Only the
+    gold's own descendants are genuinely more-correct answers, so only those
+    are banned."""
+    from collections import defaultdict
+    from datasets import load_dataset
+    from .universe import norm
+    ds = load_dataset("DeveloperOats/DBPedia_Classes", split="test")
+    kids = defaultdict(set)
+    for r in ds:
+        kids[norm(r["l2"])].add(norm(r["l3"]))
+    return dict(kids)
+
 FILTER_MODELS = ("sentence-transformers/all-mpnet-base-v2", "intfloat/e5-large-v2")
 NEAR_BAND = 0.15      # top 15% most similar options to the gold
 FAR_BAND = 0.35       # far candidates start below the median similarity
@@ -118,6 +143,11 @@ def build_pools(items, universe, sources, conflicts, alias_of, seed=101,
     for o in universe:
         by_bucket[surface_bucket(o)].append(o)
 
+    db_kids = {}
+    if any(it["domain"] == "dbpedia" for it in items):
+        db_kids = dbpedia_hierarchy()
+        log(f"  loaded DBpedia L2->L3 hierarchy for {len(db_kids)} parent classes")
+
     rater_alt = {}
     if any(it["domain"] == "goemotions" for it in items):
         rater_alt = goemotions_rater_alternatives()
@@ -155,6 +185,12 @@ def build_pools(items, universe, sources, conflicts, alias_of, seed=101,
         sims = np.mean([e @ e[gi] for e in opt_emb], axis=0)
 
         banned = {gold} | set(conflicts.get(gold, ()))
+        for src_ban in DOMAIN_SOURCE_BANS.get(it["domain"], ()):
+            banned |= {o for o in universe if src_ban in sources.get(o, ())}
+        if it["domain"] == "dbpedia":
+            n0 = len(banned)
+            banned |= db_kids.get(gold, set()) & set(universe)
+            stats["hierarchy_excluded"] += len(banned) - n0
         if it["domain"] == "goemotions":
             alts = rater_alt.get(it["text"], set())
             alts = {alias_of.get(a, a) for a in alts}
