@@ -47,11 +47,13 @@ def options_for(item, tier, K, seed=101):
 
 def build_models(names=None):
     from .models import EmbeddingSim, GLiClassZS, LayaChoice, ZeroShotNLI
+    # cheapest first, so usable cells land early and an interrupted run still
+    # leaves complete families rather than fragments
     reg = {
         "laya": lambda: (lambda a: (a.set_budgets(4096, 1024), a)[1])(LayaChoice()),
-        "gliclass-large-v3.0": lambda: GLiClassZS(),
         "bge-large-en-v1.5": lambda: EmbeddingSim(),
         "gte-large": lambda: EmbeddingSim("thenlper/gte-large"),
+        "gliclass-large-v3.0": lambda: GLiClassZS(),
         "deberta-v3-base-zeroshot-v2.0": lambda: ZeroShotNLI("MoritzLaurer/deberta-v3-base-zeroshot-v2.0"),
         "deberta-v3-large-zeroshot-v2.0": lambda: ZeroShotNLI("MoritzLaurer/deberta-v3-large-zeroshot-v2.0"),
     }
