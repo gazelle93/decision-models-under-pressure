@@ -138,8 +138,32 @@ def opts_for(entry, tier, K, order_seed=None):
     return opts
 
 
-QUESTION = "What is the intent or category of this text?"
-TEMPLATE = "The intent or category of this text is {}."
+# Prompt wording must not share content words with any candidate option:
+# v1 used "...category of this text?" while CLINC ships an intent literally
+# named "text" (send a text message). Laya was pulled to it on 94% of its
+# near-tier CLINC errors at K=64; GLiClass and bge were unaffected. See
+# DEVIATIONS.md D3. assert_no_collision() below enforces this going forward.
+QUESTION = "Which label applies here?"
+TEMPLATE = "This example is labeled {}."
+
+PROMPT_STOP = {"which", "label", "applies", "here", "this", "is", "the", "a", "an",
+               "of", "to", "in", "for", "and", "or", "example", "labeled"}
+
+
+def assert_no_collision(universe):
+    """Fail loudly if any option string equals a content word of the prompt."""
+    words = set()
+    for s in (QUESTION, TEMPLATE.replace("{}", " ")):
+        words |= {w.strip(".,?!").lower() for w in s.split()}
+    content = words - PROMPT_STOP
+    hits = sorted(set(universe) & content)
+    if hits:
+        raise SystemExit(f"PROMPT-OPTION COLLISION: options {hits} appear in the prompt. "
+                         "Reword QUESTION/TEMPLATE before running.")
+    # also flag options that are substrings of the prompt as a warning
+    soft = sorted(o for o in universe if len(o) > 3 and o in (QUESTION + " " + TEMPLATE).lower())
+    if soft:
+        log(f"  WARNING soft prompt-option overlap: {soft}")
 
 
 def run_cell(adapter, model_name, dname, tier, items, f):
@@ -211,6 +235,8 @@ def main():
 
     universe, sources, conflicts, alias_of = load_universe()
     log(f"universe_v2: {len(universe)} options")
+    assert_no_collision(universe)
+    log("  prompt-option collision check: passed")
     domains = build_domain_items(n, alias_of)
     # drop items whose gold fell out of the universe (shouldn't happen; log if it does)
     for d in domains:
