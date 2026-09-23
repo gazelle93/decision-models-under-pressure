@@ -45,7 +45,7 @@ def main():
                     "leaked": it["leaked"],
                     "max_gold_sim_near": round(it["max_gold_sim_near"], 4),
                     "max_gold_sim_far": round(it["max_gold_sim_far"], 4),
-                    "distractors": {"near": it["tiers"]["near"], "far": it["tiers"]["far"]},
+                    "distractors": {k: v for k, v in it["tiers"].items()},
                 }
                 rows.append(r)
                 f.write(json.dumps(r) + "\n")
@@ -60,6 +60,42 @@ def main():
                         int(r["leaked"]), len(r["distractors"]["near"]),
                         len(r["distractors"]["far"]),
                         r["max_gold_sim_near"], r["max_gold_sim_far"]])
+
+    # ---- per-RQ splits: uid indexes, not copies, so there is exactly one
+    # canonical item record and no way for the splits to drift from it.
+    SPLITS = {
+        "rq1_kscaling": {
+            "domains": ["clinc", "goemotions"],
+            "tiers": ["ext"], "k_grid": [2, 4, 8, 16, 32, 64, 128, 256],
+            "why": "fin-topic excluded (Amendment 1): its format residual inflates "
+                   "accuracy level. Single 'ext' pool; no tier contrast here.",
+        },
+        "rq2_order": {
+            "domains": ["clinc", "goemotions", "fintopic"],
+            "tiers": ["near", "far"], "k_grid": [16, 64],
+            "why": "fin-topic RETAINED: flip rate compares permutations of one "
+                   "identical option set, so a format shortcut is constant within "
+                   "the item and cannot manufacture or mask order sensitivity.",
+        },
+        "rq3_hardness": {
+            "domains": ["clinc", "goemotions"],
+            "tiers": ["near", "far"], "k_grid": [2, 4, 8, 16, 32, 64],
+            "why": "fin-topic excluded (Amendment 1): worst text-free-picker cell "
+                   "(0.280 vs 0.0625 chance), self-contradictory taxonomy, and a "
+                   "hypernym class that is also a legitimate gold.",
+        },
+    }
+    splits_dir = out / "splits"
+    splits_dir.mkdir(exist_ok=True)
+    split_meta = {}
+    for name, spec in SPLITS.items():
+        uids = [r["uid"] for r in rows if r["domain"] in spec["domains"]]
+        payload = dict(spec)
+        payload["n_items"] = len(uids)
+        payload["uids"] = uids
+        (splits_dir / f"{name}.json").write_text(json.dumps(payload, indent=1))
+        split_meta[name] = {"n_items": len(uids), "domains": spec["domains"],
+                            "tiers": spec["tiers"], "k_grid": spec["k_grid"]}
 
     shutil.copy(f"results/universe_{version}.json", out / "universe.json")
     (out / "gates.json").write_text(json.dumps(gates, indent=1))
@@ -79,16 +115,13 @@ def main():
         "max_k": max(src["ks"]),
         "gates_passed": src["gates_passed"],
         "gates": {k: v["pass"] for k, v in gates.items()},
-        "rq_scope": {
-            "RQ1_kcurve": ["clinc", "goemotions"],
-            "RQ2_order": ["clinc", "goemotions", "fintopic"],
-            "RQ3_tiers": ["clinc", "goemotions"],
-            "fintopic_note": "excluded from RQ1/RQ3 (Amendment 1); retained for RQ2",
-        },
+        "splits": split_meta,
         "failed_sources": uni.get("failed_sources", []),
         "files": {},
     }
-    for name in ("items.jsonl", "items.csv", "universe.json", "gates.json"):
+    for name in ("items.jsonl", "items.csv", "universe.json", "gates.json",
+                 "splits/rq1_kscaling.json", "splits/rq2_order.json",
+                 "splits/rq3_hardness.json"):
         p = out / name
         manifest["files"][name] = {"sha256_16": sha(p), "bytes": p.stat().st_size}
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1))
@@ -97,6 +130,9 @@ def main():
     for name, meta in manifest["files"].items():
         print(f"  {name:16s} {meta['bytes']/1024:8.1f} KB  sha {meta['sha256_16']}")
     print(f"  items: {manifest['n_items']} ({dict(by_dom)})")
+    for k, v in split_meta.items():
+        print(f"  split {k:16s} n={v['n_items']:>3}  domains={v['domains']}  "
+              f"tiers={v['tiers']}  K={v['k_grid'][0]}..{v['k_grid'][-1]}")
 
 
 if __name__ == "__main__":

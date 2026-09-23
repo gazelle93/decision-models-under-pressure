@@ -27,6 +27,9 @@ MIN_STRATUM = 0       # 0 = keep all items. Dropping thin-stratum items was
                       # tried and REJECTED: it shrinks n without closing gate
                       # G3, and the survivors are a biased (format-typical)
                       # subsample. The residual is disclosed instead.
+EXT_K = 256           # RQ1 extended K-curve: a single pool, no tier
+                      # contrast, so the near/far matching constraint does
+                      # not apply — it only must not leak the gold.
 MAX_K = 64            # tier-contrast ceiling. A "near" band must stay near:
                       # 63 distractors is 12% of a 532-option universe, which
                       # is defensible; 255 would be 48% and would not be. The
@@ -206,13 +209,21 @@ def build_pools(items, universe, sources, conflicts, alias_of, seed=101,
             if pick is not None:
                 far_set.append(pick)
                 used.add(pick)
-        it["tiers"] = {"near": near, "far": far_set}
+        # RQ1 extended pool: 255 distractors spanning the similarity range,
+        # preferring the gold's surface stratum so format stays uninformative.
+        ext_cand = [o for o in cand if o not in set(near) | set(far_set)]
+        ext_same = [o for o in ext_cand if surface_bucket(o) == gb]
+        ext_other = [o for o in ext_cand if surface_bucket(o) != gb]
+        ext = (ext_same + ext_other)[:EXT_K - 1]
+        stats["ext_short"] += 1 if len(ext) < EXT_K - 1 else 0
+
+        it["tiers"] = {"near": near, "far": far_set, "ext": ext}
         it["max_gold_sim_near"] = float(max((sims[idx[o]] for o in near[:63]), default=0))
         it["max_gold_sim_far"] = float(max((sims[idx[o]] for o in far_set[:63]), default=0))
         stats["n"] += 1
     log(f"  pools built for {stats['n']} items | rater-excluded {stats['rater_excluded']} | "
         f"text-dropped near {stats['near_text_dropped']} far {stats['far_text_dropped']} | "
-        f"bucket fallbacks {stats['bucket_fallback']} | "
+        f"bucket fallbacks {stats['bucket_fallback']} | ext-short {stats['ext_short']} | "
         f"distractors in gold's stratum {stats['near_same_bucket']/max(stats['near_total'],1):.1%}")
     return items
 
