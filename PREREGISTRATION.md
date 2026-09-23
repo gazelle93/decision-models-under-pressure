@@ -63,6 +63,44 @@ items into the reserve list the moment they are sent. Consequences:
 - Hosted latency stays in its own column and is never compared to local bs=1.
 - Rung: ungradable (training data undisclosed).
 
+## AMENDMENT 2 (2026-09-23, before any inference on dataset v3)
+
+**RQ1 becomes a two-factor design: K x TEXT LENGTH.** Domains: clinc, mtop,
+goemotions, dbpedia (fin-topic excluded per Amendment 1). DBpedia is included
+UNTRUNCATED and supplies the length range: 128 -> 1300 chars p10->p90, a 10x
+spread within one domain, against clinc/mtop ~34-38 median. Every item carries
+`text_chars`. Analyses report accuracy vs log2 K, vs length quartile, and the
+K x length interaction.
+  - Validity note recorded in advance: DBpedia's text-free-picker residual
+    (0.245-0.260) is UNCORRELATED with text length within the domain
+    (r=-0.089, p=0.21), so it inflates the accuracy level but cannot
+    manufacture a length effect.
+  - MANDATORY instrumentation: every call logs whether the model truncated its
+    input. Long texts with 255 options will exhaust some context budgets; that
+    is a real K x length interaction, but unlogged it is indistinguishable from
+    a capability finding, which is exactly how defect F7 produced a false Laya
+    context cliff.
+
+**RQ3 domains become CLINC + MTOP.** MTOP has the strongest measured tier
+separation in the suite (+0.342 vs clinc +0.239) because its 102 intents
+cluster into 11 real domains, giving same-object/different-verb near bands that
+CLINC's flat taxonomy cannot. Its far tier is the cleanest measured
+(text-free picker 0.060). Pre-registered caveats: MTOP is G3 for BOTH model
+families, so it adds no rung diversity; GoEmotions is dropped from RQ3 and may
+be re-added only as a declared amendment, not silently.
+
+**RQ2 domains: clinc, goemotions, fintopic, mtop** (unchanged rationale: flip
+rate compares permutations of one identical option set).
+
+**K ceilings.** Tier contrasts (RQ2/RQ3) run to K=64; the `near` band must stay
+near, and 63 distractors is 12% of a 902-option universe. RQ1 runs to K=256 on
+the single `ext` pool, where no tier contrast is claimed.
+
+**Data source.** All runs read the frozen `dataset/v3/` via
+`harness.dataset.load_rq`, never a rebuild. Checksums are in
+`dataset/v3/manifest.json`. The open gate (G3) is reported per cell beside
+every accuracy table.
+
 ## Items
 
 - Gold domains x 500 items each, fresh draws (seed 101): CLINC-150 intents
