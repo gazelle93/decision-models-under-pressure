@@ -303,6 +303,29 @@ Effects at other cells are within noise (se ~0.07); only Laya@256 and bge's
 filter column stand above it. deberta shows ~no effects, as expected for a
 pass-per-label scorer.
 
+## Stage 2 interim notes (2026-09-23, run in progress)
+
+**Order-invariance has a tie-breaking crack.** gte-large logged a 1.5% flip
+rate (3/200) on GoEmotions/fin-topic at K=16, where "invariant by
+construction" predicts exactly 0. Verified cause: EXACT score ties —
+the flipping items have top-1 and top-2 probabilities identical to the logged
+precision (gap 0.00e+00, near-uniform ~1/K each), so argmax resolves by
+position. Not a harness bug; a real property. Corrected claim: embedding and
+pair scorers are order-invariant EXCEPT under exact score ties, which occur
+when the model is maximally uninformative. bge shows 0.000 everywhere
+(its scores apparently never tie at float precision on these sets).
+
+**Within-class variance exceeds between-class variance for H3 (interim).**
+On CLINC, Delta(far-near) at K=16/32/64: Laya +0.005/+0.095/+0.235 vs
+GLiClass +0.000/+0.020/+0.010 — the two A3 models sit at opposite extremes,
+with GLiClass the most near-robust model measured and Laya the least. A2
+models cluster tightly (bge +0.025/+0.010/+0.005, gte +0.020/+0.000/+0.020).
+If this holds at completion, C2's class-level rule cannot be evaluated as
+designed: the architecture class does not predict near-distractor
+robustness, the individual model does. The two-models-per-class rule is what
+caught this; a single-A3 study would have concluded the opposite of whichever
+model it picked.
+
 ## Two-stage N protocol (adopted 2026-09-22)
 
 Every experiment runs pilot-first: **Stage 1 at N=50** (hypothesis-generating,
