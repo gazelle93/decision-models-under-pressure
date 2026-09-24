@@ -141,3 +141,65 @@ far, no measured benefit.
 between two defensible options. Mitigations exist and are untested here:
 order-shuffling augmentation during training, and test-time permutation
 ensembling, which restores exact invariance at M x latency.
+
+
+### RQ1 / C3 — cardinality x text length — 2026-09-24, n=800 (clinc, mtop, goemotions, dbpedia)
+
+Dataset v3, 6 models x 4 domains x K in {2..256} on the `ext` pool, 24 cells,
+38,400 decisions, ~4.5h.
+
+**Accuracy vs K** (slope = accuracy change per doubling of K):
+
+| model | fam | K=2 | K=16 | K=64 | K=256 | slope |
+|---|---|---|---|---|---|---|
+| laya | A3 | **0.866** | 0.691 | 0.521 | **0.276** | **-0.0807** |
+| deberta-v3-large-zeroshot | A1 | 0.856 | 0.691 | 0.521 | 0.343 | -0.0731 |
+| deberta-v3-base-zeroshot | A1 | 0.829 | 0.639 | 0.469 | 0.328 | -0.0706 |
+| gliclass-large-v3.0 | A3 | 0.802 | 0.625 | 0.476 | 0.328 | -0.0658 |
+| bge-large-en-v1.5 | A2 | 0.681 | 0.561 | 0.435 | 0.310 | -0.0527 |
+| gte-large | A2 | 0.670 | 0.527 | 0.425 | **0.320** | **-0.0482** |
+
+**C3 verdict — families separate by SLOPE, not by level.** Bootstrap CIs on
+pairwise slope differences: A2 vs A1 **-0.0214 [-0.0259,-0.0164] SEPARATED**,
+A2 vs A3 **+0.0228 [+0.0181,+0.0280] SEPARATED**, A1 vs A3 +0.0014
+[-0.0029,+0.0065] **overlaps 0**. Embedding scorers degrade measurably more
+slowly than either family that reads the options jointly with the text;
+cross-encoders and option-conditioned models are indistinguishable from each
+other in slope.
+
+The ranking inverts across the range. Laya is the best model at K=2 (0.866)
+and the WORST at K=256 (0.276); gte-large is the worst at K=2 (0.670) and
+finishes ahead of it (0.320). Any single-K benchmark of this category reports
+a different winner depending on the K it happened to pick.
+
+**Truncation: zero on every call, every model, every K.** So the curves are
+cardinality effects, not context-overflow artifacts — the distinction that a
+harness bug previously erased. Laya's K=256 collapse is real model behaviour.
+
+**Second factor — text length is weak.** Within DBpedia's 10x internal spread
+(128 -> 1300 chars), accuracy is close to flat across quartiles: deberta-large
+at K=64 runs 0.623 / 0.680 / 0.558 / 0.644 from shortest to longest quartile,
+with no monotone penalty for any model. What interaction exists is small and
+concentrated at K=256. **Candidate-set size dominates text length by a wide
+margin in this range** — worth stating because the opposite is often assumed.
+
+**Leakage stratification.** CLINC's 25% verbatim-gold items score +0.13 to
++0.39 above clean items (gliclass at K=256: 0.900 leaked vs 0.507 clean). Any
+CLINC figure quoted without this split is inflated.
+
+---
+
+## Program status 2026-09-24: all three research questions answered
+
+| | Result |
+|---|---|
+| **RQ1 / C3** | Families separate by slope. A2 degrades slowest (-0.048/-0.053); A1 and A3 indistinguishable (-0.066 to -0.081). Rank order inverts between K=2 and K=256. Text length is a weak second factor. |
+| **RQ2 / C1** | FAILS for option-conditioned models: 16-49% of answers change from option order alone. A1/A2 structurally invariant (verified: exact 0.0000, with ties the only crack). |
+| **RQ3 / C2** | Applicability gate fired at K=16/32 (within-family > between-family). H3 NOT supported; at K=64 A3 carries the LARGEST near-distractor penalty (+0.351 vs +0.256 A1). |
+
+**Converging conclusion.** Across three independent questions, the
+option-conditioned architecture shows no measured advantage and two measured
+costs: it degrades fastest under near distractors and it is the only family
+whose answer depends on the order the options happen to be listed in. Its
+genuine advantage is elsewhere and is not contested by this study: single-pass
+latency that is flat in K, where cross-encoders pay one forward pass per option.
