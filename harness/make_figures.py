@@ -12,15 +12,15 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 INK, MUTED, GRID = "#6b7280", "#9ca3af", "#d8dad8"
 JEV, LAYA, FIELD = "#2a78d6", "#eb6834", "#b6bbc0"
-KS = [2, 4, 8, 16, 32, 64, 128, 256]
+KS = [2, 4, 8, 16, 32, 64, 128]
 CURVES = {
-    "Jev":            [.890, .801, .782, .769, .721, .672, .600, None],
-    "Laya":           [.866, .777, .733, .691, .641, .521, .385, .276],
-    "deberta-large":  [.856, .777, .733, .691, .619, .521, .410, .343],
-    "deberta-base":   [.829, .729, .677, .639, .561, .469, .385, .328],
-    "gliclass":       [.802, .704, .676, .625, .569, .476, .394, .328],
-    "bge-large":      [.681, .618, .593, .561, .507, .435, .357, .310],
-    "gte-large":      [.670, .586, .554, .527, .475, .425, .354, .320],
+    "Jev":            [.890, .801, .782, .769, .721, .672, .600],
+    "Laya":           [.866, .777, .733, .691, .641, .521, .385],
+    "deberta-large":  [.856, .777, .733, .691, .619, .521, .410],
+    "deberta-base":   [.829, .729, .677, .639, .561, .469, .385],
+    "gliclass":       [.802, .704, .676, .625, .569, .476, .394],
+    "bge-large":      [.681, .618, .593, .561, .507, .435, .357],
+    "gte-large":      [.670, .586, .554, .527, .475, .425, .354],
 }
 
 
@@ -42,7 +42,7 @@ def save(fig, name):
 
 
 def kcurve():
-    fig, ax = plt.subplots(figsize=(7.4, 4.1))
+    fig, ax = plt.subplots(figsize=(7.2, 4.0))
     style(ax)
     for name, ys in CURVES.items():
         xs = [k for k, y in zip(KS, ys) if y is not None]
@@ -57,12 +57,12 @@ def kcurve():
     ax.set_xticks(KS); ax.set_xticklabels(KS)
     ax.set_xlabel("number of candidate options", color=MUTED, fontsize=9.5)
     ax.set_ylabel("accuracy", color=MUTED, fontsize=9.5)
-    ax.set_ylim(.22, .95)
-    ax.annotate("Jev", (128, .600), xytext=(8, 2), textcoords="offset points",
+    ax.set_ylim(.31, .95)
+    ax.annotate("Jev", (128, .600), xytext=(9, 0), textcoords="offset points",
                 color=JEV, fontsize=10.5, weight="bold")
-    ax.annotate("Laya", (256, .276), xytext=(8, -2), textcoords="offset points",
+    ax.annotate("Laya", (128, .385), xytext=(9, -4), textcoords="offset points",
                 color=LAYA, fontsize=10.5, weight="bold")
-    ax.annotate("four open models", (256, .330), xytext=(-150, 22),
+    ax.annotate("four open models", (64, .450), xytext=(-46, -30),
                 textcoords="offset points", color=MUTED, fontsize=9)
     ax.set_title("Accuracy falls as the candidate list grows", color=INK,
                  fontsize=11.5, weight="bold", loc="left", pad=12)

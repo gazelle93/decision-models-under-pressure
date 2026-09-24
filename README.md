@@ -1,8 +1,27 @@
 # Decision Models Under Pressure
 
-A comparison of six systems that take a piece of text, a question, and a list of
-candidate answers, and return a probability over those candidates. TypeSafe's
-Jev, Convai's Laya, and four open alternatives.
+A comparison of seven systems that take a piece of text, a question, and a list of
+candidate answers, and return a probability over those candidates. Two of them are
+the products this was really about: TypeSafe's **Jev**, which its makers call a new
+class of model, and Convai's **Laya**, whose author says he published the same idea
+a year earlier and that Jev is marketing on top of it.
+
+The other five are open models, and they are here to give those two numbers
+something to mean. How a model reads its candidates turns out to predict a lot, so
+they are grouped that way:
+
+| model | how it reads the candidates |
+| --- | --- |
+| `gliclass-large-v3.0` | all candidates in one pass, as a set, like Laya |
+| `deberta-v3-base-zeroshot-v2.0` | one pass per candidate, each scored against the text alone |
+| `deberta-v3-large-zeroshot-v2.0` | the same, larger |
+| `bge-large-en-v1.5` | embeds the text once, compares it to cached candidate vectors |
+| `thenlper/gte-large` | the same, different encoder |
+
+Only `gliclass` and Laya can see the candidates as a set. The other four score each
+one in isolation, which means they are incapable of noticing that two candidates
+are similar, and equally incapable of being swayed by the order you list them in.
+That distinction runs through all three results below.
 
 Published comparisons of these systems usually report one accuracy number on one
 candidate-set size. That turns out to hide most of what matters. In our data the
@@ -20,14 +39,17 @@ Every model gets worse as the candidate list grows. The difference is how fast.
 ![Accuracy against candidate-set size](docs/figures/k-curve.png)
 
 Jev starts highest and stays highest. At 128 candidates it answers 60% correctly
-where Laya manages 39% and the best open model 41%. Its decline per doubling of
-the list is the shallowest we measured, shallower even than the embedding-based
-scorers whose design is supposed to make them scale gracefully. Jev's line stops
-at 128 because its API refuses more than 255 options.
+where Laya manages 39% and the best open model 41%. Its decline per doubling of the
+list is the shallowest we measured, shallower even than the embedding scorers whose
+design is supposed to make them scale gracefully.
 
-Notice how little a single-number benchmark would tell you. At two candidates
-Laya and Jev are nearly tied and Laya beats four of the six models. At 128 Laya
-is last.
+The chart stops at 128 candidates because Jev's API refuses more than 255 options,
+and a comparison is only worth reading where every model has data.
+
+Notice how little a single-number benchmark would tell you. At two candidates Laya
+sits second of seven, beating five of the six systems it is measured against, and
+trails Jev by two points. At 128 it has fallen to fourth and trails Jev by
+twenty-two.
 
 Next we made the wrong answers hard. For every item we built two versions: one
 where the distractors came from unrelated domains, and one where they were the
@@ -60,9 +82,14 @@ flips on about a third. If you are routing support tickets this barely touches
 you. If you are scoring anything subjective it matters a lot.
 
 Two fixes are available to anyone deploying these systems today. Present the
-options in a fixed canonical order so the instability is at least deterministic,
-or ask the same question under several orderings and average the results, which
-buys exact stability at the price of several calls per decision.
+options in a fixed canonical order so the instability is at least deterministic, or
+ask the same question under several orderings and average the results, which buys
+exact stability at the price of several calls per decision.
+
+This is the result the four open models exist in this study to frame. Reading the
+candidates as a set is what lets a model weigh them against each other, and it is
+also what lets their order leak into the answer. The models that cannot do the
+first are immune to the second.
 
 ## What we cannot tell you
 
@@ -75,9 +102,10 @@ evaluation can settle it while the training data stays private.
 
 Three smaller limits. Jev rounds its probabilities to two decimals, which is too
 coarse for calibration analysis, so we report what it chose rather than how well
-calibrated it was. Its API caps candidate lists at 255 options, so its scaling
-curve stops where the open models continue. And the near-distractor comparison
-rests on two domains, both of which every model in the study has plausibly seen.
+calibrated it was. Its API caps candidate lists at 255 options, so we stopped every
+model at 128 and the behaviour of the open models beyond that is not reported here,
+though it is in the logs. And the near-distractor comparison rests on two domains,
+both of which every model in the study has plausibly seen.
 
 ## Reproducing it
 
