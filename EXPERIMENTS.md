@@ -245,3 +245,50 @@ failure rather than silently scored).
 Confirmed as predicted: Jev returns probabilities at **2 decimals**, so its
 NLL/Brier/ECE will be rounding-limited. Accuracy and flip rate — which carry
 all three of this study's findings — are unaffected.
+
+
+### Jev arm — 2026-09-24 — 29,600 paid calls, $1.04, zero failures
+
+Via OpenRouter `/api/v1/systemone`, model `typesafe/jev-1.13-20260917`, against
+the identical frozen dataset and protocol. K capped at 128 for RQ1 (the API
+rejects 256+ options).
+
+| | Jev | best open | worst open |
+|---|---|---|---|
+| **RQ1** K-slope | **-0.0425** | A2 -0.048 | A3 laya -0.081 |
+| **RQ1** acc @K=128 | **0.600** | deberta-large 0.410 | gte 0.354 |
+| **RQ2** flip @K=16 | **0.070** | A1/A2 0.0000 | laya 0.206 |
+| **RQ2** flip @K=64 | **0.146** | A1/A2 0.0000 | laya 0.494 |
+| **RQ3** Delta @K=64 | **+0.105** | A1 +0.256 | A3 +0.351 |
+
+**This inverts the study's conclusion about the architecture.** Jev shows the
+option-conditioned SIGNATURE — it is order-sensitive, which the pair and
+embedding families structurally cannot be — but at roughly a third of Laya's
+magnitude, while simultaneously being the MOST robust model tested to near
+distractors (+0.105 against +0.256 to +0.351 for every open family) and having
+the FLATTEST K-curve of anything measured, embedding scorers included.
+
+Revised reading: the two costs found in the open models are **properties of
+those checkpoints, not of the architecture**. Option-conditioning does not
+require a 16-49% order tax or the steepest near-distractor decay; Jev
+demonstrates an implementation with neither at that magnitude. Our RQ2/RQ3
+conclusions must be restated as being about the open A3 implementations, not
+about A3 as a class.
+
+**The confound that prevents a stronger claim.** Jev's training data is
+undisclosed, so under our own rung ladder it is UNGRADABLE — and CLINC, MTOP
+and GoEmotions are all public datasets it may have trained on. Its advantage is
+therefore consistent with either better training or contamination, and this
+study cannot separate them. A weak signal favouring familiarity: Jev's flip
+rate by domain at K=64 is lowest on the intent domains (clinc/far 0.015,
+mtop/far 0.030) and highest on GoEmotions (far 0.305, near 0.330), the domain
+least likely to appear in a decision-routing training mix.
+
+**Rounding, as predicted.** 28,915 of 29,600 calls (98%) return at least one
+option at exactly 0.00, so Jev's NLL/Brier/ECE are rounding-limited and are not
+reported. Accuracy and flip rate are unaffected and carry the findings above.
+
+**Operational note.** Every failure protection held: per-call fsync'd ledger,
+free resume (the 72 smoke calls were correctly skipped as already paid), a
+pre-flight spend cap, and response validation. 23 calls/sec at 5 workers,
+238ms mean latency, and not one call had to be retried or re-paid.
