@@ -29,10 +29,29 @@ Jev joins A3 when API credentials exist (K ≤ 64 is well inside its 255-option
 cap). It is hosted, un-rerunnable and rounds probabilities to 2 decimals, so
 its calibration metrics are flagged rounding-limited.
 
+## Findings
+
+Six models, 182,400 decisions, three questions, one frozen dataset. Full write-up:
+**[Jev Under Pressure](https://claude.ai/code/artifact/821b40b5-7946-4604-8923-49875badc9e7)**.
+
+| | Jev | Laya | best open |
+|---|---|---|---|
+| Accuracy at 128 candidates | **0.600** | 0.385 | 0.410 |
+| Decline per doubling of K | **−0.043** | −0.081 | −0.048 |
+| Accuracy lost to hard distractors | **−0.105** | −0.351 | −0.256 |
+| Answers changed by option order | 0.146 | 0.494 | **0.000** |
+
+Jev holds up best under scale and under near-miss distractors, and is the only
+one of the three leaders whose answer depends on how the options are ordered —
+though far less than Laya. Two of the open families never flip at all, because
+they score each option in isolation. **Caveat that cannot be resolved from
+outside:** Jev's training data is undisclosed and these test sets are public,
+so better-trained and previously-seen are indistinguishable here.
+
 ## Repository
 
 ```
-dataset/v3/          the frozen dataset — items, universe, gates, splits, datacard
+dataset/v3-public/   the published dataset — no item text; see "Data" below
 harness/             the live pipeline (see below)
 docs/history/        the audit that produced this design; read before changing it
 archive/pre-v3/      superseded code and results, kept for provenance only
@@ -56,10 +75,33 @@ EXPERIMENTS.md       the running log of what was actually run
 ## Running it
 
 ```bash
-.venv/bin/python -m harness.build_v3 --n 200        # build + gate
-.venv/bin/python -m harness.export_dataset          # freeze to dataset/v3
-.venv/bin/python -m harness.run_v3 --rq rq3         # run a research question
+python -m venv .venv && .venv/bin/pip install torch transformers datasets \
+    sentence-transformers scikit-learn
+
+.venv/bin/python -m harness.rebuild_texts       # restore item texts (see Data)
+.venv/bin/python -m harness.run_v3 --rq rq3     # run one research question
+
+# to rebuild the dataset from scratch instead of using the published freeze:
+.venv/bin/python -m harness.build_v3 --n 200    # build + gate
+.venv/bin/python -m harness.export_dataset
+
+# the Jev arm (paid; ~$1 for the full grid)
+export OPENROUTER_API_KEY=sk-or-...
+.venv/bin/python -m harness.run_jev --rq rq3 --cap 2.00
 ```
+
+## Data
+
+The published dataset carries **every label, distractor list and derived field
+but no item text**. The five upstream sources have incompatible terms and one
+of them is tweet text with no stated licence, so redistributing the texts is
+not ours to do. Each item instead carries a SHA-256 of its original text, and
+`harness.rebuild_texts` restores them from the original sources and verifies
+every one against its hash — so the exact items this study used are
+reproducible without republishing anything encumbered.
+
+Upstream: CLINC-150 (CC BY 3.0), GoEmotions (Apache 2.0), MTOP (CC BY-SA 4.0),
+DBpedia Classes (CC BY-SA), twitter-financial-news-topic (no stated licence).
 
 Experiments read the frozen dataset through `load_rq`, never a rebuild, so an
 RQ's domain scope is a property of the data rather than something an analyst
