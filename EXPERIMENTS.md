@@ -203,3 +203,45 @@ costs: it degrades fastest under near distractors and it is the only family
 whose answer depends on the order the options happen to be listed in. Its
 genuine advantage is elsewhere and is not contested by this study: single-pass
 latency that is flat in K, where cross-encoders pay one forward pass per option.
+
+---
+
+## Jev arm — failure-mode verification before spending (2026-09-24)
+
+Jev is reachable via OpenRouter at the undocumented `/api/v1/systemone`
+endpoint (it is absent from the 458-model catalog; the chat endpoint rejects it
+with a message naming the right one). Resolves to `typesafe/jev-1.13-20260917`.
+
+**Measured cost scaling** (real calls on real dataset items): input tokens =
+**284 + 13·K**, i.e. 284 tokens of FIXED overhead per call, at exactly
+$0.042/M with no OpenRouter markup. That makes the full arm **$0.96 for 29,600
+calls** — 4.5x my earlier token-only estimate, which ignored the overhead.
+Budget is $5.00, so the arm uses 19%.
+
+**Drills run against the live API (total spend $0.00006):**
+
+| # | Failure | Result |
+|---|---|---|
+| 1 | SIGKILL mid-run | ledger survived (fsync per call); resume re-paid **0 of 2** completed calls |
+| 2 | Spend cap | initially FAILED — only blocked once already over. Fixed to a pre-flight projection; now blocks the *crossing* call with no leak |
+| 3 | Option set > 255 (API cap) | recorded as an error, $0 spent, run continues |
+| 4 | Torn final ledger line | replay tolerates truncated JSON, recovers all valid records |
+| 5 | Permanent 4xx | recorded in 0.1s, no retry storm |
+
+**Two further gaps found by review, not by drill:**
+- A transient failure (network blip exhausting retries) was being cached as
+  "done" forever, so resume would never retry it. Now only records that
+  produced probabilities, or that COST money, are settled; free failures are
+  retried, since re-sending them cannot double-spend.
+- Credit exhaustion (401/402/403) would have been recorded 29,600 times.
+  It now aborts the run immediately, resumably.
+
+**Standing protections for the run:** per-call append-only ledger with fsync,
+free resume, pre-flight spend cap, bounded exponential backoff on 408/429/5xx
+only, and response validation (the returned choice must be one of the options
+sent and the probability keys must match exactly, or the call is recorded as a
+failure rather than silently scored).
+
+Confirmed as predicted: Jev returns probabilities at **2 decimals**, so its
+NLL/Brier/ECE will be rounding-limited. Accuracy and flip rate — which carry
+all three of this study's findings — are unaffected.
