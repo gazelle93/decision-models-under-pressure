@@ -8,4 +8,6 @@ __pycache__/
 # results/published/ and ARE tracked.
 results/*
 !results/published/
-archive/pre-v3/results/
+
+# superseded runs from before the v3 rebuild, kept locally only
+archive/
