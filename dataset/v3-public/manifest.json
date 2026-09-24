@@ -1,0 +1,137 @@
+{
+ "version": "v3",
+ "frozen": "2026-09-23",
+ "n_items": 1000,
+ "n_items_by_domain": {
+  "clinc": 200,
+  "goemotions": 200,
+  "fintopic": 200,
+  "dbpedia": 200,
+  "mtop": 200
+ },
+ "n_options": 902,
+ "n_conflicts": 559,
+ "seed_items": 101,
+ "question": "Which label applies here?",
+ "template": "This example is labeled {}.",
+ "k_grid_tier_contrast": [
+  2,
+  4,
+  8,
+  16,
+  32,
+  64
+ ],
+ "max_k": 64,
+ "gates_passed": false,
+ "gates": {
+  "G1_prompt_collision": true,
+  "G2_format_tell": true,
+  "G3_textfree_gold_picker": false,
+  "G4_gold_position_uniform": true,
+  "G5_tier_separation": true,
+  "G6_pairing_feasible": true,
+  "G7_no_conflict_in_options": true,
+  "G8_gold_present_once": true
+ },
+ "splits": {
+  "rq1_kscaling": {
+   "n_items": 800,
+   "domains": [
+    "clinc",
+    "mtop",
+    "goemotions",
+    "dbpedia"
+   ],
+   "tiers": [
+    "ext"
+   ],
+   "k_grid": [
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256
+   ]
+  },
+  "rq2_order": {
+   "n_items": 800,
+   "domains": [
+    "clinc",
+    "goemotions",
+    "fintopic",
+    "mtop"
+   ],
+   "tiers": [
+    "near",
+    "far"
+   ],
+   "k_grid": [
+    16,
+    64
+   ]
+  },
+  "rq3_hardness": {
+   "n_items": 400,
+   "domains": [
+    "clinc",
+    "mtop"
+   ],
+   "tiers": [
+    "near",
+    "far"
+   ],
+   "k_grid": [
+    2,
+    4,
+    8,
+    16,
+    32,
+    64
+   ]
+  }
+ },
+ "failed_sources": [
+  "trec_fine",
+  "yahoo"
+ ],
+ "files": {
+  "items.jsonl": {
+   "sha256_16": "bb92d40fceee3fc5",
+   "bytes": 6155421
+  },
+  "items.csv": {
+   "sha256_16": "f15e923ab6ff461f",
+   "bytes": 245098
+  },
+  "universe.json": {
+   "sha256_16": "fb06d94eea498265",
+   "bytes": 64584
+  },
+  "gates.json": {
+   "sha256_16": "b45a2ac858fb9163",
+   "bytes": 1733
+  },
+  "splits/rq1_kscaling.json": {
+   "sha256_16": "dc8696f5fc0595f0",
+   "bytes": 13593
+  },
+  "splits/rq2_order.json": {
+   "sha256_16": "e3ed684f4588dbbc",
+   "bytes": 13314
+  },
+  "splits/rq3_hardness.json": {
+   "sha256_16": "ef1d5116478452a0",
+   "bytes": 6392
+  }
+ },
+ "distribution": {
+  "texts_included": false,
+  "reason": "upstream licences differ and one source is tweet text with no stated licence; see README",
+  "restore_with": "python -m harness.rebuild_texts",
+  "verification": "each item carries text_sha256 of its original text"
+ }
+}

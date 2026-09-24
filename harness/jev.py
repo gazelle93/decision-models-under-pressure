@@ -35,9 +35,16 @@ class SpendCapExceeded(RuntimeError):
 
 
 class JevClient:
-    def __init__(self, ledger_path, key_path="/tmp/.or_key", spend_cap=2.00,
+    def __init__(self, ledger_path, key_path=None, spend_cap=2.00,
                  max_retries=4, timeout=60, log=print):
-        self.key = pathlib.Path(key_path).read_text().strip()
+        import os
+        key = os.environ.get("OPENROUTER_API_KEY")
+        if not key and key_path and pathlib.Path(key_path).exists():
+            key = pathlib.Path(key_path).read_text().strip()
+        if not key:
+            raise SystemExit("set OPENROUTER_API_KEY (Jev is reached through "
+                             "OpenRouter's /api/v1/systemone endpoint)")
+        self.key = key
         self.ledger_path = pathlib.Path(ledger_path)
         self.ledger_path.parent.mkdir(parents=True, exist_ok=True)
         self.cap = spend_cap

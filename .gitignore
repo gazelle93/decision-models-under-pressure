@@ -1,5 +1,9 @@
 .venv/
 __pycache__/
 *.pyc
-results/
 .DS_Store
+
+# working outputs: large, regenerable, and per-decision logs contain item text
+results/
+dataset/v3/          # texts included — NOT redistributable, see dataset/v3-public
+archive/pre-v3/results/

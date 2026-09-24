@@ -19,3 +19,20 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+NOTE ON DATA. This licence covers the CODE in this repository. It does NOT
+cover the underlying datasets, which remain under their own terms:
+
+  CLINC-150            CC BY 3.0
+  GoEmotions           Apache 2.0
+  MTOP                 CC BY-SA 4.0 (Meta)
+  DBpedia Classes      CC BY-SA (Wikipedia-derived)
+  twitter-financial-news-topic   no stated licence; tweet text
+
+Because those terms differ and one source is unlicensed tweet text, the
+published dataset in dataset/v3-public/ contains NO item text — only SHA-256
+hashes of it, alongside every label, distractor list and derived field.
+`python -m harness.rebuild_texts` restores the texts from the original sources
+and verifies each against its published hash.

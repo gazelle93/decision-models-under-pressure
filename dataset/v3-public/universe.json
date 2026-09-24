@@ -19,17 +19,13 @@
   "normalization": "camelCase/dot-aware split before lowercase (v3 fix)"
  },
  "failed_sources": [
-  "mtop",
   "trec_fine",
-  "yahoo",
-  "biotech",
-  "mtop_domain",
-  "b77_alt"
+  "yahoo"
  ],
- "n_options": 802,
+ "n_options": 902,
  "n_merges": 10,
- "n_conflicts": 430,
- "n_same_source_kept": 84,
+ "n_conflicts": 559,
+ "n_same_source_kept": 131,
  "merges": {
   "definition": [
    "definitions"
@@ -160,6 +156,12 @@
   "actor": [
    "dbpedia_l2"
   ],
+  "add time timer": [
+   "mtop"
+  ],
+  "add to playlist music": [
+   "mtop"
+  ],
   "adjustments": [
    "ledgar"
   ],
@@ -247,6 +249,9 @@
   ],
   "annoyance": [
    "go_emotions"
+  ],
+  "answer call": [
+   "mtop"
   ],
   "anti corruption laws": [
    "ledgar"
@@ -489,6 +494,9 @@
   "cancel": [
    "clinc150"
   ],
+  "cancel message": [
+   "mtop"
+  ],
   "cancel reservation": [
    "clinc150"
   ],
@@ -722,6 +730,21 @@
   "country support": [
    "banking77"
   ],
+  "create alarm": [
+   "mtop"
+  ],
+  "create call": [
+   "mtop"
+  ],
+  "create playlist music": [
+   "mtop"
+  ],
+  "create reminder": [
+   "mtop"
+  ],
+  "create timer": [
+   "mtop"
+  ],
   "credit limit": [
    "clinc150"
   ],
@@ -822,6 +845,18 @@
   "definition of something": [
    "trec_qc"
   ],
+  "delete alarm": [
+   "mtop"
+  ],
+  "delete playlist music": [
+   "mtop"
+  ],
+  "delete reminder": [
+   "mtop"
+  ],
+  "delete timer": [
+   "mtop"
+  ],
   "description of a person": [
    "trec_qc"
   ],
@@ -860,6 +895,9 @@
   ],
   "disgust": [
    "go_emotions"
+  ],
+  "dislike music": [
+   "mtop"
   ],
   "disposable card limits": [
    "banking77"
@@ -924,6 +962,9 @@
   ],
   "employment": [
    "ledgar"
+  ],
+  "end call": [
+   "mtop"
   ],
   "energy or oil": [
    "fin_topics"
@@ -997,6 +1038,9 @@
   ],
   "fashion designer": [
    "dbpedia_l3"
+  ],
+  "fast forward music": [
+   "mtop"
   ],
   "fear": [
    "dair_emotion",
@@ -1107,11 +1151,95 @@
   "geography": [
    "sib200"
   ],
+  "get age": [
+   "mtop"
+  ],
+  "get alarm": [
+   "mtop"
+  ],
+  "get attendee event": [
+   "mtop"
+  ],
+  "get availability": [
+   "mtop"
+  ],
+  "get call": [
+   "mtop"
+  ],
+  "get call contact": [
+   "mtop"
+  ],
+  "get call time": [
+   "mtop"
+  ],
+  "get category event": [
+   "mtop"
+  ],
+  "get contact": [
+   "mtop"
+  ],
+  "get contact method": [
+   "mtop"
+  ],
+  "get date time event": [
+   "mtop"
+  ],
+  "get details news": [
+   "mtop"
+  ],
   "get directions": [
    "snips"
   ],
   "get disposable virtual card": [
    "banking77"
+  ],
+  "get education degree": [
+   "mtop"
+  ],
+  "get education time": [
+   "mtop"
+  ],
+  "get employer": [
+   "mtop"
+  ],
+  "get employment time": [
+   "mtop"
+  ],
+  "get event": [
+   "mtop"
+  ],
+  "get info contact": [
+   "mtop"
+  ],
+  "get info recipes": [
+   "mtop"
+  ],
+  "get job": [
+   "mtop"
+  ],
+  "get language": [
+   "mtop"
+  ],
+  "get life event": [
+   "mtop"
+  ],
+  "get life event time": [
+   "mtop"
+  ],
+  "get location": [
+   "mtop"
+  ],
+  "get lyrics music": [
+   "mtop"
+  ],
+  "get message": [
+   "mtop"
+  ],
+  "get message contact": [
+   "mtop"
+  ],
+  "get mutual friends": [
+   "mtop"
   ],
   "get physical card": [
    "banking77"
@@ -1119,8 +1247,41 @@
   "get place details": [
    "snips"
   ],
+  "get recipes": [
+   "mtop"
+  ],
+  "get reminder": [
+   "mtop"
+  ],
+  "get reminder amount": [
+   "mtop"
+  ],
+  "get reminder date time": [
+   "mtop"
+  ],
+  "get reminder location": [
+   "mtop"
+  ],
+  "get stories news": [
+   "mtop"
+  ],
+  "get sunrise": [
+   "mtop"
+  ],
+  "get sunset": [
+   "mtop"
+  ],
+  "get timer": [
+   "mtop"
+  ],
+  "get track info music": [
+   "mtop"
+  ],
   "get traffic information": [
    "snips"
+  ],
+  "get undergrad": [
+   "mtop"
   ],
   "getting spare card": [
    "banking77"
@@ -1191,6 +1352,9 @@
   "health": [
    "sib200"
   ],
+  "help reminder": [
+   "mtop"
+  ],
   "historian": [
    "dbpedia_l3"
   ],
@@ -1199,6 +1363,9 @@
   ],
   "hockey team": [
    "dbpedia_l3"
+  ],
+  "hold call": [
+   "mtop"
   ],
   "hollywood cartoon": [
    "dbpedia_l3"
@@ -1232,6 +1399,9 @@
   ],
   "ice hockey player": [
    "dbpedia_l3"
+  ],
+  "ignore call": [
+   "mtop"
   ],
   "improve credit score": [
    "clinc150"
@@ -1318,6 +1488,9 @@
   "ipo": [
    "fin_topics"
   ],
+  "is true recipes": [
+   "mtop"
+  ],
   "jockey": [
    "dbpedia_l3"
   ],
@@ -1370,6 +1543,9 @@
   "lighthouse": [
    "dbpedia_l3"
   ],
+  "like music": [
+   "mtop"
+  ],
   "linear measures": [
    "trec_qc"
   ],
@@ -1387,6 +1563,9 @@
   ],
   "litigations": [
    "ledgar"
+  ],
+  "loop music": [
+   "mtop"
   ],
   "lost luggage": [
    "clinc150"
@@ -1673,6 +1852,12 @@
   "passcode forgotten": [
    "banking77"
   ],
+  "pause music": [
+   "mtop"
+  ],
+  "pause timer": [
+   "mtop"
+  ],
   "pay bill": [
    "clinc150"
   ],
@@ -1732,9 +1917,13 @@
   "play game": [
    "massive"
   ],
+  "play media": [
+   "mtop"
+  ],
   "play music": [
    "clinc150",
-   "massive"
+   "massive",
+   "mtop"
   ],
   "play podcasts": [
    "massive"
@@ -1776,11 +1965,17 @@
   "powers": [
    "ledgar"
   ],
+  "prefer": [
+   "mtop"
+  ],
   "presenter": [
    "dbpedia_l2"
   ],
   "president": [
    "dbpedia_l3"
+  ],
+  "previous track music": [
+   "mtop"
   ],
   "prices": [
    "trec_qc"
@@ -1838,6 +2033,12 @@
   ],
   "qualifications": [
    "ledgar"
+  ],
+  "question music": [
+   "mtop"
+  ],
+  "question news": [
+   "mtop"
   ],
   "race": [
    "dbpedia_l2"
@@ -1936,11 +2137,23 @@
   "remorse": [
    "go_emotions"
   ],
+  "remove from playlist music": [
+   "mtop"
+  ],
   "repeat": [
    "clinc150"
   ],
+  "repeat all music": [
+   "mtop"
+  ],
+  "repeat all off music": [
+   "mtop"
+  ],
   "replacement card duration": [
    "clinc150"
+  ],
+  "replay music": [
+   "mtop"
   ],
   "report fraud": [
    "clinc150"
@@ -1963,6 +2176,9 @@
   "reset settings": [
    "clinc150"
   ],
+  "restart timer": [
+   "mtop"
+  ],
   "restaurant": [
    "dbpedia_l3"
   ],
@@ -1975,11 +2191,20 @@
   "restaurant suggestion": [
    "clinc150"
   ],
+  "resume music": [
+   "mtop"
+  ],
+  "resume timer": [
+   "mtop"
+  ],
   "reverted card payment": [
    "banking77"
   ],
   "rewards balance": [
    "clinc150"
+  ],
+  "rewind music": [
+   "mtop"
   ],
   "river": [
    "dbpedia_l3"
@@ -2069,6 +2294,30 @@
   "senator": [
    "dbpedia_l3"
   ],
+  "send message": [
+   "mtop"
+  ],
+  "set available": [
+   "mtop"
+  ],
+  "set default provider calling": [
+   "mtop"
+  ],
+  "set default provider music": [
+   "mtop"
+  ],
+  "set rsvp interested": [
+   "mtop"
+  ],
+  "set rsvp no": [
+   "mtop"
+  ],
+  "set rsvp yes": [
+   "mtop"
+  ],
+  "set unavailable": [
+   "mtop"
+  ],
   "settlement": [
    "dbpedia_l2"
   ],
@@ -2077,6 +2326,9 @@
   ],
   "share eta": [
    "snips"
+  ],
+  "share event": [
+   "mtop"
   ],
   "share location": [
    "clinc150",
@@ -2091,6 +2343,9 @@
   "shopping mall": [
    "dbpedia_l3"
   ],
+  "silence alarm": [
+   "mtop"
+  ],
   "single": [
    "dbpedia_l3"
   ],
@@ -2100,8 +2355,14 @@
   "skier": [
    "dbpedia_l3"
   ],
+  "skip track music": [
+   "mtop"
+  ],
   "smart home": [
    "clinc150"
+  ],
+  "snooze alarm": [
+   "mtop"
   ],
   "soap character": [
    "dbpedia_l3"
@@ -2195,6 +2456,9 @@
   "stadium": [
    "dbpedia_l3"
   ],
+  "start shuffle music": [
+   "mtop"
+  ],
   "states": [
    "trec_qc"
   ],
@@ -2207,6 +2471,9 @@
   "stock movement": [
    "fin_topics"
   ],
+  "stop music": [
+   "mtop"
+  ],
   "stream": [
    "dbpedia_l2"
   ],
@@ -2215,6 +2482,9 @@
   ],
   "subsidiaries": [
    "ledgar"
+  ],
+  "subtract time timer": [
+   "mtop"
   ],
   "successors": [
    "ledgar"
@@ -2237,6 +2507,9 @@
   ],
   "swimmer": [
    "dbpedia_l3"
+  ],
+  "switch call": [
+   "mtop"
   ],
   "sync device": [
    "clinc150"
@@ -2440,8 +2713,32 @@
   "university": [
    "dbpedia_l3"
   ],
+  "update alarm": [
+   "mtop"
+  ],
+  "update call": [
+   "mtop"
+  ],
+  "update method call": [
+   "mtop"
+  ],
   "update playlist": [
    "clinc150"
+  ],
+  "update reminder": [
+   "mtop"
+  ],
+  "update reminder date time": [
+   "mtop"
+  ],
+  "update reminder location": [
+   "mtop"
+  ],
+  "update reminder todo": [
+   "mtop"
+  ],
+  "update timer": [
+   "mtop"
   ],
   "use of proceeds": [
    "ledgar"
@@ -2514,6 +2811,7 @@
    "clinc150",
    "massive",
    "massive_scenario",
+   "mtop",
    "snips"
   ],
   "weight": [
@@ -2611,6 +2909,22 @@
    "voice actor"
   ],
   [
+   "add time timer",
+   "time"
+  ],
+  [
+   "add time timer",
+   "timer"
+  ],
+  [
+   "add to playlist music",
+   "music"
+  ],
+  [
+   "add to playlist music",
+   "update playlist"
+  ],
+  [
    "admiration",
    "approval"
   ],
@@ -2629,6 +2943,98 @@
   [
    "alarm",
    "alarm set"
+  ],
+  [
+   "alarm",
+   "create alarm"
+  ],
+  [
+   "alarm",
+   "delete alarm"
+  ],
+  [
+   "alarm",
+   "get alarm"
+  ],
+  [
+   "alarm",
+   "silence alarm"
+  ],
+  [
+   "alarm",
+   "snooze alarm"
+  ],
+  [
+   "alarm",
+   "update alarm"
+  ],
+  [
+   "alarm query",
+   "create alarm"
+  ],
+  [
+   "alarm query",
+   "delete alarm"
+  ],
+  [
+   "alarm query",
+   "get alarm"
+  ],
+  [
+   "alarm query",
+   "silence alarm"
+  ],
+  [
+   "alarm query",
+   "snooze alarm"
+  ],
+  [
+   "alarm query",
+   "update alarm"
+  ],
+  [
+   "alarm remove",
+   "create alarm"
+  ],
+  [
+   "alarm remove",
+   "delete alarm"
+  ],
+  [
+   "alarm remove",
+   "get alarm"
+  ],
+  [
+   "alarm remove",
+   "silence alarm"
+  ],
+  [
+   "alarm remove",
+   "update alarm"
+  ],
+  [
+   "alarm set",
+   "create alarm"
+  ],
+  [
+   "alarm set",
+   "delete alarm"
+  ],
+  [
+   "alarm set",
+   "get alarm"
+  ],
+  [
+   "alarm set",
+   "silence alarm"
+  ],
+  [
+   "alarm set",
+   "snooze alarm"
+  ],
+  [
+   "alarm set",
+   "update alarm"
   ],
   [
    "album",
@@ -2705,6 +3111,10 @@
   [
    "annoyance",
    "disapproval"
+  ],
+  [
+   "answer call",
+   "make call"
   ],
   [
    "approval",
@@ -3024,6 +3434,14 @@
   ],
   [
    "cancel",
+   "cancel message"
+  ],
+  [
+   "cancel",
+   "cancel transfer"
+  ],
+  [
+   "cancel message",
    "cancel transfer"
   ],
   [
@@ -3116,6 +3534,10 @@
   ],
   [
    "company or product news",
+   "get stories news"
+  ],
+  [
+   "company or product news",
    "news"
   ],
   [
@@ -3155,6 +3577,30 @@
    "jurisdictions"
   ],
   [
+   "create playlist music",
+   "music"
+  ],
+  [
+   "create playlist music",
+   "music query"
+  ],
+  [
+   "create playlist music",
+   "update playlist"
+  ],
+  [
+   "create reminder",
+   "reminder"
+  ],
+  [
+   "create reminder",
+   "reminder update"
+  ],
+  [
+   "create timer",
+   "timer"
+  ],
+  [
    "cricket ground",
    "sport facility"
   ],
@@ -3181,6 +3627,10 @@
   [
    "currencies",
    "supported cards and currencies"
+  ],
+  [
+   "current location",
+   "get location"
   ],
   [
    "current location",
@@ -3211,6 +3661,18 @@
    "dates"
   ],
   [
+   "date",
+   "get date time event"
+  ],
+  [
+   "date",
+   "get reminder date time"
+  ],
+  [
+   "date",
+   "update reminder date time"
+  ],
+  [
    "dates",
    "effective dates"
   ],
@@ -3224,11 +3686,19 @@
   ],
   [
    "datetime",
+   "get date time event"
+  ],
+  [
+   "datetime",
    "time"
   ],
   [
    "datetime",
    "timezone"
+  ],
+  [
+   "datetime query",
+   "get date time event"
   ],
   [
    "death",
@@ -3247,6 +3717,26 @@
    "qa definition"
   ],
   [
+   "delete playlist music",
+   "music"
+  ],
+  [
+   "delete playlist music",
+   "update playlist"
+  ],
+  [
+   "delete reminder",
+   "reminder"
+  ],
+  [
+   "delete reminder",
+   "reminder update"
+  ],
+  [
+   "delete timer",
+   "timer"
+  ],
+  [
    "description of a person",
    "person"
   ],
@@ -3259,12 +3749,24 @@
    "transport query"
   ],
   [
+   "dislike music",
+   "music"
+  ],
+  [
+   "dislike music",
+   "music dislikeness"
+  ],
+  [
    "earnings",
    "financials"
   ],
   [
    "earnings",
    "income"
+  ],
+  [
+   "educational institution",
+   "get education degree"
   ],
   [
    "educational institution",
@@ -3299,6 +3801,18 @@
    "email sendemail"
   ],
   [
+   "employment",
+   "get employer"
+  ],
+  [
+   "employment",
+   "get employment time"
+  ],
+  [
+   "employment",
+   "get job"
+  ],
+  [
    "enforcements",
    "legal or regulation"
   ],
@@ -3320,6 +3834,10 @@
   ],
   [
    "events",
+   "get event"
+  ],
+  [
+   "events",
    "recommendation events"
   ],
   [
@@ -3333,6 +3851,10 @@
   [
    "failed transfer",
    "transfer"
+  ],
+  [
+   "fast forward music",
+   "music"
   ],
   [
    "fear",
@@ -3420,6 +3942,10 @@
   ],
   [
    "general news or opinion",
+   "question news"
+  ],
+  [
+   "general news or opinion",
    "stock commentary"
   ],
   [
@@ -3429,6 +3955,106 @@
   [
    "genre",
    "music genre"
+  ],
+  [
+   "get call",
+   "make call"
+  ],
+  [
+   "get call time",
+   "time"
+  ],
+  [
+   "get date time event",
+   "time"
+  ],
+  [
+   "get details news",
+   "news"
+  ],
+  [
+   "get details news",
+   "news query"
+  ],
+  [
+   "get education time",
+   "time"
+  ],
+  [
+   "get employment time",
+   "time"
+  ],
+  [
+   "get info recipes",
+   "recipe"
+  ],
+  [
+   "get life event time",
+   "time"
+  ],
+  [
+   "get location",
+   "get place details"
+  ],
+  [
+   "get location",
+   "share location"
+  ],
+  [
+   "get lyrics music",
+   "music"
+  ],
+  [
+   "get recipes",
+   "recipe"
+  ],
+  [
+   "get reminder",
+   "reminder"
+  ],
+  [
+   "get reminder",
+   "reminder update"
+  ],
+  [
+   "get reminder amount",
+   "reminder"
+  ],
+  [
+   "get reminder amount",
+   "reminder update"
+  ],
+  [
+   "get reminder date time",
+   "reminder"
+  ],
+  [
+   "get reminder date time",
+   "reminder update"
+  ],
+  [
+   "get reminder date time",
+   "time"
+  ],
+  [
+   "get reminder location",
+   "reminder"
+  ],
+  [
+   "get stories news",
+   "news"
+  ],
+  [
+   "get stories news",
+   "news query"
+  ],
+  [
+   "get timer",
+   "timer"
+  ],
+  [
+   "get track info music",
+   "music"
   ],
   [
    "get traffic information",
@@ -3473,6 +4099,14 @@
   [
    "handball team",
    "sports team"
+  ],
+  [
+   "help reminder",
+   "reminder"
+  ],
+  [
+   "help reminder",
+   "reminder update"
   ],
   [
    "hockey team",
@@ -3599,6 +4233,14 @@
    "supreme court of the united states case"
   ],
   [
+   "like music",
+   "music"
+  ],
+  [
+   "like music",
+   "music dislikeness"
+  ],
+  [
    "lists",
    "lists createoradd"
   ],
@@ -3621,6 +4263,14 @@
   [
    "lists query",
    "todo list"
+  ],
+  [
+   "loop music",
+   "music"
+  ],
+  [
+   "loop music",
+   "music query"
   ],
   [
    "lost or stolen card",
@@ -3716,11 +4366,63 @@
   ],
   [
    "music",
+   "pause music"
+  ],
+  [
+   "music",
    "play music"
   ],
   [
    "music",
+   "previous track music"
+  ],
+  [
+   "music",
+   "question music"
+  ],
+  [
+   "music",
+   "remove from playlist music"
+  ],
+  [
+   "music",
+   "repeat all music"
+  ],
+  [
+   "music",
+   "repeat all off music"
+  ],
+  [
+   "music",
+   "replay music"
+  ],
+  [
+   "music",
+   "resume music"
+  ],
+  [
+   "music",
+   "rewind music"
+  ],
+  [
+   "music",
+   "set default provider music"
+  ],
+  [
+   "music",
+   "skip track music"
+  ],
+  [
+   "music",
    "song"
+  ],
+  [
+   "music",
+   "start shuffle music"
+  ],
+  [
+   "music",
+   "stop music"
   ],
   [
    "music festival",
@@ -3729,6 +4431,18 @@
   [
    "music genre",
    "music query"
+  ],
+  [
+   "music genre",
+   "question music"
+  ],
+  [
+   "music query",
+   "question music"
+  ],
+  [
+   "music settings",
+   "set default provider music"
   ],
   [
    "musical",
@@ -3745,6 +4459,10 @@
   [
    "musical instrument",
    "musical work"
+  ],
+  [
+   "musical work",
+   "question music"
   ],
   [
    "nascar driver",
@@ -3771,8 +4489,16 @@
    "newspaper"
   ],
   [
+   "news",
+   "question news"
+  ],
+  [
    "news query",
    "newspaper"
+  ],
+  [
+   "news query",
+   "question news"
   ],
   [
    "next song",
@@ -3789,6 +4515,10 @@
   [
    "no",
    "no waivers"
+  ],
+  [
+   "no",
+   "set rsvp no"
   ],
   [
    "office holder",
@@ -3821,6 +4551,10 @@
   [
    "organisation member",
    "organizations"
+  ],
+  [
+   "pause timer",
+   "timer"
   ],
   [
    "pay bill",
@@ -3857,6 +4591,10 @@
   [
    "play",
    "play game"
+  ],
+  [
+   "play",
+   "play media"
   ],
   [
    "play",
@@ -4003,6 +4741,54 @@
    "soc religion christian"
   ],
   [
+   "reminder",
+   "update reminder"
+  ],
+  [
+   "reminder",
+   "update reminder date time"
+  ],
+  [
+   "reminder",
+   "update reminder location"
+  ],
+  [
+   "reminder",
+   "update reminder todo"
+  ],
+  [
+   "reminder update",
+   "update reminder"
+  ],
+  [
+   "reminder update",
+   "update reminder date time"
+  ],
+  [
+   "reminder update",
+   "update reminder location"
+  ],
+  [
+   "reminder update",
+   "update reminder todo"
+  ],
+  [
+   "remove from playlist music",
+   "update playlist"
+  ],
+  [
+   "repeat",
+   "repeat all music"
+  ],
+  [
+   "repeat",
+   "repeat all off music"
+  ],
+  [
+   "restart timer",
+   "timer"
+  ],
+  [
    "restaurant",
    "restaurant reservation"
   ],
@@ -4013,6 +4799,10 @@
   [
    "restaurant",
    "restaurant suggestion"
+  ],
+  [
+   "resume timer",
+   "timer"
   ],
   [
    "route of transportation",
@@ -4077,6 +4867,10 @@
   [
    "screen writer",
    "writer"
+  ],
+  [
+   "set rsvp yes",
+   "yes"
   ],
   [
    "skater",
@@ -4203,6 +4997,14 @@
    "television station"
   ],
   [
+   "subtract time timer",
+   "time"
+  ],
+  [
+   "subtract time timer",
+   "timer"
+  ],
+  [
    "sumo wrestler",
    "wrestler"
   ],
@@ -4229,6 +5031,18 @@
   [
    "the lasting time of something",
    "time"
+  ],
+  [
+   "time",
+   "update reminder date time"
+  ],
+  [
+   "timer",
+   "update timer"
+  ],
+  [
+   "todo list update",
+   "update reminder todo"
   ],
   [
    "top up by bank transfer charge",
