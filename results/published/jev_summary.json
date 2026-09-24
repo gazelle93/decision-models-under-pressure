@@ -1,0 +1,114 @@
+{
+ "model": "typesafe/jev-1.13-20260917",
+ "calls": 29600,
+ "failures": 0,
+ "cost_usd": 1.0395,
+ "rq1_acc_by_k": {
+  "2": 0.89,
+  "4": 0.8013,
+  "8": 0.7825,
+  "16": 0.7688,
+  "32": 0.7212,
+  "64": 0.6725,
+  "128": 0.6
+ },
+ "rq1_acc_by_domain_k": {
+  "clinc|2": 0.98,
+  "clinc|4": 0.955,
+  "clinc|8": 0.95,
+  "clinc|16": 0.945,
+  "clinc|32": 0.905,
+  "clinc|64": 0.895,
+  "clinc|128": 0.825,
+  "dbpedia|2": 0.96,
+  "dbpedia|4": 0.91,
+  "dbpedia|8": 0.905,
+  "dbpedia|16": 0.9,
+  "dbpedia|32": 0.855,
+  "dbpedia|64": 0.845,
+  "dbpedia|128": 0.72,
+  "goemotions|2": 0.71,
+  "goemotions|4": 0.52,
+  "goemotions|8": 0.485,
+  "goemotions|16": 0.47,
+  "goemotions|32": 0.38,
+  "goemotions|64": 0.245,
+  "goemotions|128": 0.14,
+  "mtop|2": 0.91,
+  "mtop|4": 0.82,
+  "mtop|8": 0.79,
+  "mtop|16": 0.76,
+  "mtop|32": 0.745,
+  "mtop|64": 0.705,
+  "mtop|128": 0.715
+ },
+ "rq1_slope_k2_to_128": -0.0425,
+ "rq2_flip_by_k": {
+  "16": 0.07,
+  "64": 0.1456
+ },
+ "rq2_flip_by_domain_tier_k": {
+  "clinc|far|16": 0.02,
+  "clinc|far|64": 0.015,
+  "clinc|near|16": 0.015,
+  "clinc|near|64": 0.09,
+  "fintopic|far|16": 0.02,
+  "fintopic|far|64": 0.05,
+  "fintopic|near|16": 0.08,
+  "fintopic|near|64": 0.22,
+  "goemotions|far|16": 0.105,
+  "goemotions|far|64": 0.305,
+  "goemotions|near|16": 0.235,
+  "goemotions|near|64": 0.33,
+  "mtop|far|16": 0.005,
+  "mtop|far|64": 0.03,
+  "mtop|near|16": 0.08,
+  "mtop|near|64": 0.125
+ },
+ "rq3_by_k": {
+  "2": {
+   "far": 1.0,
+   "near": 0.985,
+   "delta": 0.015,
+   "relative_drop": 0.015,
+   "n": 400
+  },
+  "4": {
+   "far": 0.99,
+   "near": 0.97,
+   "delta": 0.02,
+   "relative_drop": 0.0202,
+   "n": 400
+  },
+  "8": {
+   "far": 0.98,
+   "near": 0.9325,
+   "delta": 0.0475,
+   "relative_drop": 0.0485,
+   "n": 400
+  },
+  "16": {
+   "far": 0.985,
+   "near": 0.9125,
+   "delta": 0.0725,
+   "relative_drop": 0.0736,
+   "n": 400
+  },
+  "32": {
+   "far": 0.9775,
+   "near": 0.8875,
+   "delta": 0.09,
+   "relative_drop": 0.0921,
+   "n": 400
+  },
+  "64": {
+   "far": 0.9675,
+   "near": 0.8625,
+   "delta": 0.105,
+   "relative_drop": 0.1085,
+   "n": 400
+  }
+ },
+ "rounded_calls_with_a_zero_prob": 28915,
+ "note": "Probabilities are returned at 2 decimals, so Brier/NLL/ECE are rounding-limited and not reported. Accuracy and flip rate are unaffected."
+}

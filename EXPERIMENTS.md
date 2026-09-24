@@ -1,7 +1,9 @@
 # Experiment log
 
-Running record for the v3 program. Governed by `PREREGISTRATION.md`; the audit
-that produced this design is in `docs/history/`.
+Running record for the v3 runs. Governed by `PLAN.md`. The design came out of
+an audit that found the previous dataset could not support the question it was
+built for; what it found is summarised under "How the dataset was checked" in
+the README, and the fixes are the eight gates below.
 
 Nothing above a pilot label may be cited as a result. Every entry states n, the
 dataset version, and any deviation from the pre-registration.
@@ -11,7 +13,7 @@ dataset version, and any deviation from the pre-registration.
 ## Dataset v3 — frozen 2026-09-23
 
 1,000 items across 5 domains (clinc, mtop, goemotions, dbpedia, fintopic) over
-a 902-option universe from 12 sources. Per-RQ splits in `dataset/v3/splits/`.
+a 902-option universe from 17 loaded sources (2 declared sources failed). Per-RQ splits in `dataset/v3/splits/`.
 
 **Gates: 7 of 8 pass.**
 
@@ -152,6 +154,7 @@ Dataset v3, 6 models x 4 domains x K in {2..256} on the `ext` pool, 24 cells,
 
 | model | fam | K=2 | K=16 | K=64 | K=256 | slope |
 |---|---|---|---|---|---|---|
+| *chance (1/K)* | | *0.500* | *0.062* | *0.016* | *0.004* | |
 | laya | A3 | **0.866** | 0.691 | 0.521 | **0.276** | **-0.0807** |
 | deberta-v3-large-zeroshot | A1 | 0.856 | 0.691 | 0.521 | 0.343 | -0.0731 |
 | deberta-v3-base-zeroshot | A1 | 0.829 | 0.639 | 0.469 | 0.328 | -0.0706 |
@@ -189,7 +192,61 @@ CLINC figure quoted without this split is inflated.
 
 ---
 
-## Program status 2026-09-24: all three research questions answered
+**Deviation D6 (2026-09-24, post-inference): baselines and metrics.** The
+pre-registration asks for "chance and majority baselines on every table" and for
+Brier and 15-bin ECE beside accuracy. Two corrections.
+
+The majority baseline does not transfer to this design. It was written for the
+earlier fixed-label-set setup, where one class could dominate a column. Here
+every item carries its own K-option set, the gold appears exactly once (G8), and
+gold position is uniform (G4), so the only no-information floor is chance = 1/K.
+That row is now on the accuracy table above. Nothing is lost; the statistic
+simply had no referent in v3.
+
+Brier and ECE were genuinely missing and are now reported below, recomputed from
+the existing per-item logs without re-running any model.
+
+### Calibration vs K — 2026-09-24, derived from the RQ1 logs (no re-runs)
+
+The pre-registration asks for Brier and 15-bin ECE beside accuracy, and the
+first write-up shipped accuracy alone. Both are recomputable from the per-item
+logs, which carry full-precision distributions, so no model was re-run.
+`results/published/rq1_calibration.json`; same 800 items, pooled over the four
+RQ1 domains.
+
+**15-bin ECE** (top-label confidence; lower is better):
+
+| model | K=2 | K=4 | K=8 | K=16 | K=32 | K=64 | K=128 | K=256 |
+|---|---|---|---|---|---|---|---|---|
+| deberta-v3-large-zeroshot | 0.064 | 0.076 | 0.065 | 0.045 | 0.054 | 0.049 | 0.031 | 0.070 |
+| deberta-v3-base-zeroshot | 0.066 | 0.080 | 0.070 | 0.052 | 0.041 | 0.046 | 0.044 | 0.075 |
+| bge-large-en-v1.5 | 0.099 | 0.035 | 0.084 | 0.152 | 0.192 | 0.201 | 0.188 | 0.197 |
+| gte-large | 0.048 | 0.135 | 0.250 | 0.332 | 0.357 | 0.356 | 0.315 | 0.299 |
+| gliclass-large-v3.0 | 0.150 | 0.220 | 0.207 | 0.238 | 0.265 | 0.292 | 0.307 | 0.327 |
+| laya | **0.032** | 0.071 | 0.174 | 0.262 | 0.305 | 0.407 | 0.514 | **0.573** |
+
+**Multiclass Brier**: deberta-large 0.222 -> 0.810 across K=2 -> 256,
+deberta-base 0.266 -> 0.833, bge 0.395 -> 0.876, gliclass 0.338 -> 0.949, gte
+0.390 -> 0.973, laya 0.201 -> **1.256**.
+
+**A fourth axis where the families separate, and it is not the same split.**
+The pair cross-encoders are flat: deberta-large moves 0.064 -> 0.070 over a
+128-fold increase in candidates, so its confidence stays interpretable
+everywhere. Everything else degrades, and Laya degrades most, going from the
+best-calibrated model in the set at K=2 to the worst by a factor of eight at
+K=256. Note this is not the option-conditioned split: gte-large is an embedding
+scorer and it degrades nearly as badly (0.048 -> 0.299), while gliclass, which
+reads options jointly like Laya, sits between them. Architecture predicts order
+sensitivity cleanly; it does not predict calibration drift.
+
+Operationally this is the number that decides whether a confidence gate works.
+A Laya deployment tuned on a short candidate list and then pointed at a long one
+keeps reporting the same confidences while being wrong far more often.
+
+Jev is absent: its API rounds probabilities to two decimals and 98% of responses
+contain at least one option at exactly 0.00, which is too coarse to bin.
+
+## Status 2026-09-24: all three questions answered
 
 | | Result |
 |---|---|
@@ -201,7 +258,7 @@ CLINC figure quoted without this split is inflated.
 option-conditioned architecture shows no measured advantage and two measured
 costs: it degrades fastest under near distractors and it is the only family
 whose answer depends on the order the options happen to be listed in. Its
-genuine advantage is elsewhere and is not contested by this study: single-pass
+genuine advantage is elsewhere and nothing here contests it: single-pass
 latency that is flat in K, where cross-encoders pay one forward pass per option.
 
 ---
@@ -244,24 +301,36 @@ failure rather than silently scored).
 
 Confirmed as predicted: Jev returns probabilities at **2 decimals**, so its
 NLL/Brier/ECE will be rounding-limited. Accuracy and flip rate — which carry
-all three of this study's findings — are unaffected.
+all three findings here — are unaffected.
 
 
 ### Jev arm — 2026-09-24 — 29,600 paid calls, $1.04, zero failures
 
 Via OpenRouter `/api/v1/systemone`, model `typesafe/jev-1.13-20260917`, against
-the identical frozen dataset and protocol. K capped at 128 for RQ1 (the API
-rejects 256+ options).
+the identical frozen dataset and protocol.
+
+**Deviation D4 (2026-09-24, pre-inference): Jev K range.** The pre-registration
+caps the Jev arm at K <= 64. It ran to K=128 on RQ1 instead, because the API
+accepts up to 255 options and the extra cell is free at this cost. Permissive
+direction, recorded here rather than left silent. RQ2 and RQ3 ran at their
+pre-registered K values.
+
+**Deviation D5 (2026-09-24, post-inference): slope comparison range.** The first
+write-up compared Jev's K=2..128 slope against open-model slopes fitted on
+K=2..256. Curves steepen at the top, so that comparison flatters whichever model
+stopped earlier. All slopes are now refitted on the shared K=2..128 range in
+`analyze_jev.py`; the ordering is unchanged and Jev is still shallowest
+(-0.0425 against gte-large -0.0482).
 
 | | Jev | best open | worst open |
 |---|---|---|---|
-| **RQ1** K-slope | **-0.0425** | A2 -0.048 | A3 laya -0.081 |
+| **RQ1** K-slope (K=2..128, all models) | **-0.0425** | gte -0.0482 | laya -0.0731 |
 | **RQ1** acc @K=128 | **0.600** | deberta-large 0.410 | gte 0.354 |
 | **RQ2** flip @K=16 | **0.070** | A1/A2 0.0000 | laya 0.206 |
 | **RQ2** flip @K=64 | **0.146** | A1/A2 0.0000 | laya 0.494 |
 | **RQ3** Delta @K=64 | **+0.105** | A1 +0.256 | A3 +0.351 |
 
-**This inverts the study's conclusion about the architecture.** Jev shows the
+**This inverts the conclusion about the architecture.** Jev shows the
 option-conditioned SIGNATURE — it is order-sensitive, which the pair and
 embedding families structurally cannot be — but at roughly a third of Laya's
 magnitude, while simultaneously being the MOST robust model tested to near
@@ -279,10 +348,22 @@ about A3 as a class.
 undisclosed, so under our own rung ladder it is UNGRADABLE — and CLINC, MTOP
 and GoEmotions are all public datasets it may have trained on. Its advantage is
 therefore consistent with either better training or contamination, and this
-study cannot separate them. A weak signal favouring familiarity: Jev's flip
-rate by domain at K=64 is lowest on the intent domains (clinc/far 0.015,
-mtop/far 0.030) and highest on GoEmotions (far 0.305, near 0.330), the domain
-least likely to appear in a decision-routing training mix.
+experiment cannot separate them. A weak signal favouring familiarity: Jev's flip
+rate at K=64 is lowest on the intent domains and highest on GoEmotions, the
+domain least likely to appear in a decision-routing training mix. Both tiers,
+because the far tier alone understates every cell by a factor of three to six:
+
+| domain | far | near |
+|---|---|---|
+| clinc | 0.015 | 0.090 |
+| mtop | 0.030 | 0.125 |
+| fintopic | 0.050 | 0.220 |
+| goemotions | 0.305 | 0.330 |
+
+The near column is the one a deployment sees, since real candidate sets contain
+plausible competitors. An earlier draft of this section and of the README quoted
+only the far column and reported Jev's intent-domain flip rate as "1.5% to 3%";
+the honest range across both tiers is 1.5% to 12.5%.
 
 **Rounding, as predicted.** 28,915 of 29,600 calls (98%) return at least one
 option at exactly 0.00, so Jev's NLL/Brier/ECE are rounding-limited and are not
@@ -292,3 +373,54 @@ reported. Accuracy and flip rate are unaffected and carry the findings above.
 free resume (the 72 smoke calls were correctly skipped as already paid), a
 pre-flight spend cap, and response validation. 23 calls/sec at 5 workers,
 238ms mean latency, and not one call had to be retried or re-paid.
+
+---
+
+## Appendix — deviations from the superseded stage-2 plan
+
+These are deviations
+from an earlier plan, against a dataset and pipeline (`universe_v2`,
+`stage2.py`) that the 2026-09-23 audit discarded. Current deviations are D4
+onward, above.
+
+**D1 (pre-inference): near-tier K feasibility.** The near tier was bounded by
+source size (CLINC ~149 sibling options, GoEmotions ~27, fin-topic ~19), so the
+tier contrast ran at K in {16,32,64} on CLINC and K=16 only elsewhere. Cells
+whose per-item pool was smaller than K-1 were skipped and logged as infeasible,
+never filled from another source. Superseded: v3 builds tiers from measured
+similarity rather than source membership, and every item is feasible in both
+tiers at every K (gate G6).
+
+**D2 (pre-inference): deberta-large subsampling.** Full N at K<=64, a fixed
+150-item prefix above. Carried forward into v3 unchanged.
+
+**D3 (post-inference, data discarded and rerun): prompt-option collision.**
+The one worth keeping. The stage-2 question ("What is the intent or category of
+this text?") and template ("The intent or category of this text is {}.") both
+contained the word *text*, and CLINC-150 ships an intent named exactly `text`
+(send a text message), which was in the universe. At K=64 on the CLINC near
+tier, with `text` offered in 93 of 200 items:
+
+| model | errors that were `text` |
+|---|---|
+| laya | 50 of 53 (94%) |
+| gliclass-large-v3.0 | 0 of 29 (0%) |
+| bge-large-en-v1.5 | 0 of 22 (0%) |
+
+Laya's near-tier collapse in that run was mostly this artifact rather than
+semantic difficulty. Thirty-one completed cells were discarded, the prompt was
+reworded to "Which label applies here?" / "This example is labeled {}.", and a
+collision check was added that refuses to start if any option equals a prompt
+content word. It is now gate G1.
+
+At the time I read the asymmetry as a robustness difference between
+architectures. The audit withdrew that (finding S2): `GLiClassZS.decide` accepts
+a template and a question and uses neither, passing bare option strings, so
+GLiClass was immune because it never saw the colliding word. The embedding
+adapter applies the template to the options rather than to the input, so its
+exposure was different too. The asymmetry was in my adapters, not in the models.
+
+What survives is narrower and still worth knowing: a single word shared between
+your prompt and one of your candidate labels can account for 94% of one model's
+errors, and nothing in a normal evaluation would show you that. It is now gate
+G1, which refuses to start a run if any option equals a prompt content word.

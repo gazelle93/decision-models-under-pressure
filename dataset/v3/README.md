@@ -1,25 +1,69 @@
 # Decision-model evaluation dataset — v3
 
-Frozen 2026-09-23. **1,000 items across 5 domains** (clinc, mtop, goemotions, dbpedia, fintopic); 902-option universe. Built and validated for the comparative study *Decision
-Models Under Pressure* (K-scaling, order sensitivity, distractor hardness).
-Reusable as-is; the Jev arm will be run against this exact freeze.
+Frozen 2026-09-23. **1,000 items across 5 domains** (clinc, mtop, goemotions,
+dbpedia, fintopic) over a 902-option label universe. Every item comes with two
+matched distractor pools, so the same question can be asked with easy
+alternatives or hard ones. Built for the *Decision Models Under Pressure*
+comparison and reusable on its own.
+
+## Licence and credit
+
+**This dataset is CC BY-SA 4.0** (<https://creativecommons.org/licenses/by-sa/4.0/>).
+Not a preference: MTOP is CC BY-SA 4.0, so anything redistributing its text
+inherits ShareAlike, and so does anything you derive from this.
+
+Item texts are verbatim and unmodified. `text_sha256` is a SHA-256 of each text,
+so you can verify any item against its original source. **Cite the upstream
+papers, not this repo** — they did the work the labels rest on.
+
+| domain | source | licence | reference |
+|---|---|---|---|
+| clinc | [CLINC-150](https://huggingface.co/datasets/clinc/clinc_oos) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | Larson et al. 2019, EMNLP |
+| goemotions | [GoEmotions](https://huggingface.co/datasets/google-research-datasets/go_emotions) | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) | Demszky et al. 2020, ACL (Google Research) |
+| mtop | [MTOP](https://huggingface.co/datasets/WillHeld/mtop) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | Li et al. 2021, EACL (Meta) |
+| dbpedia | [DBpedia Classes](https://huggingface.co/datasets/DeveloperOats/DBPedia_Classes) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) | derived from DBpedia / Wikipedia |
+| fintopic | [Twitter Financial News](https://huggingface.co/datasets/zeroshot/twitter-financial-news-topic) | [MIT](https://opensource.org/license/mit) | uploader-stated |
+
+Three notes the upstream cards carry and this one should too. GoEmotions texts
+are Reddit comments and some are offensive or sensitive. The MTOP mirror above
+has no licence metadata of its own; CC BY-SA 4.0 comes from the original Meta
+release and is corroborated by other mirrors (`tasksource/mtop`,
+`SEACrowd/mtop_intent_classification`). The fintopic texts are tweets written by
+third parties, so the MIT grant is the uploader's; this repo relies on that
+stated licence and makes no independent claim about the underlying posts.
+
+**What changed from upstream**, identically for all five: a seeded 200-item
+subset per domain (`seed_items: 101`, in `manifest.json`); label strings
+normalised (lowercased, CamelCase and dot forms split, punctuation stripped,
+whitespace collapsed); item texts left untouched; and derived fields added
+(`distractors`, `max_gold_sim_near`, `max_gold_sim_far`, `leaked`, `text_chars`,
+`text_sha256`).
 
 ## What an item is
 
-Each item is a text plus a gold label, and **two matched distractor pools** so
-the same item can be asked with easy or hard alternatives:
+A real row, `mtop:15`, abridged:
 
 ```json
-{"uid": "clinc:0", "domain": "clinc", "text": "can i share my location with david",
- "gold": "share location", "source": "clinc150", "leaked": false,
- "max_gold_sim_near": 0.68, "max_gold_sim_far": 0.44,
- "distractors": {"near": ["...63 options..."], "far": ["...63 options..."]}}
+{"uid": "mtop:15", "domain": "mtop", "text": "Set alarm for cooking time at 7pm",
+ "gold": "create alarm", "source": "mtop", "leaked": false, "text_chars": 33,
+ "max_gold_sim_near": 0.8171, "max_gold_sim_far": 0.396,
+ "distractors": {
+   "near": ["snooze alarm", "update alarm", "delete alarm", "silence alarm", "...63 total"],
+   "far":  ["lacrosse player", "figure skater", "declined transfer", "...63 total"],
+   "ext":  ["...255 total, spanning the range"]}}
 ```
 
+| pool | size | purpose |
+|---|---|---|
+| `near` | 63 | the gold's most-similar band: hard distractors |
+| `far` | 63 | below-median similarity, surface-matched to `near` |
+| `ext` | 255 | one pool spanning the range, for candidate lists up to 256 |
+
 To pose a question at cardinality K, take the gold plus the first K-1
-distractors of the chosen tier and shuffle (see `harness/tiers.py:options_for`,
-which seeds on the item uid). Pools are **nested**: the K=8 options are a
-subset of the K=16 options, so a K-curve is a within-item measurement.
+distractors of the chosen pool and shuffle
+(`harness/build/tiers.py:options_for`, seeded on the item uid). Pools are
+**nested**: the K=8 options are a subset of the K=16 options, so a curve across K
+is a within-item measurement.
 
 ## Files
 
@@ -27,125 +71,86 @@ subset of the K=16 options, so a K-curve is a within-item measurement.
 |---|---|---|
 | `items.jsonl` | JSON Lines | **canonical.** One object per item, pools included |
 | `items.csv` | CSV | flat view for eyeballing in Excel/Sheets; no pools |
-| `universe.json` | JSON | the 802-option label universe, conflicts, merges, policy |
-| `gates.json` | JSON | validation results at freeze time |
+| `universe.json` | JSON | the 902-option label universe, conflicts, merges, policy |
+| `gates.json` | JSON | the eight validation checks and their per-cell numbers |
 | `manifest.json` | JSON | counts, seeds, prompt, split summary, sha256 of every file |
-| `splits/rq*.json` | JSON | **per-RQ item indexes** — which items, tiers and K each question may use |
+| `splits/rq*.json` | JSON | **per-question item indexes** — which items, pools and K each one may use |
 
 ## Loading
 
 ```python
 from harness.dataset import load_rq
-items, spec = load_rq("rq3")   # 400 items, clinc+goemotions, near/far, K<=64
-# spec carries the K grid, the permitted tiers, and why the scope is what it is
+items, spec = load_rq("rq3")   # 400 items, clinc+mtop, near/far, K<=64
+# spec carries the K grid, the permitted pools, and why the scope is what it is
 
 from harness.dataset import load
 items, universe, manifest = load("v3")   # everything, unfiltered
 ```
 
-**Use `load_rq`, not `load`, in experiments.** The splits are uid indexes over
-the one canonical `items.jsonl` (no duplication, so they cannot drift), and
-they make the fin-topic exclusion a property of the data rather than something
-an analyst has to remember. Each item carries three pools:
-
-| pool | size | used by | purpose |
-|---|---|---|---|
-| `near` | 63 | RQ2, RQ3 | most-similar band — hard distractors |
-| `far` | 63 | RQ2, RQ3 | below-median band, surface-matched to `near` |
-| `ext` | 255 | RQ1 | single pool spanning the range, for K up to 256 |
-
-### RQ1 is a two-factor design: K **and** text length
-
-DBpedia is included **untruncated** on purpose. Its texts run 128 → 1,300 chars
-(p10 → p90) — a **10× spread inside one domain** — against clinc/mtop at ~34–38
-median and goemotions at 60. Every item carries `text_chars`, so the K-curve can
-be cut by length. Two notes that make this valid:
-
-- The text-free-picker residual on DBpedia (0.245–0.260) is **uncorrelated with
-  text length within the domain** (r = −0.089, p = 0.21). It inflates the
-  accuracy *level*, and cannot manufacture a length effect.
-- Long texts plus 255 options **will** exhaust some models' context. That is a
-  measurable K × length interaction, not a defect — but truncation must be
-  logged per call, or it will be mistaken for a capability finding (exactly the
-  error that produced the false Laya cliff, defect F7).
-
-### RQ3 domains: CLINC + MTOP
-
-MTOP has the **strongest tier separation in the suite (+0.342** vs CLINC's
-+0.239) because its 102 intents cluster into 11 real domains, so near-band
-siblings are same-object/different-verb (`create alarm` / `delete alarm` /
-`snooze alarm`) — the dense structure CLINC's flat multi-domain taxonomy lacks.
-Its far tier is also the cleanest measured (text-free picker 0.060, under the
-gate). Two caveats carried in the split file: MTOP is **G3 for both model
-families** (intent is trained for deberta via MASSIVE/Banking77 and for Laya via
-support triage), so it adds no rung diversity; and its `IN:` label prefix is
-stripped at universe build — unstripped, all 102 labels share a leading token
-and become a perfect tier signal. Each MTOP item also carries `mtop_domain`,
-which supports a stricter *hierarchical* near tier as a robustness check on the
-similarity-banded construction.
+**Use `load_rq`, not `load`.** The splits are uid indexes over the one canonical
+`items.jsonl`, so they cannot drift from it, and they make the fin-topic
+exclusion a property of the data rather than something you have to remember.
 
 ## Construction
 
-- **Universe**: 802 label strings from 12 datasets (CLINC-150, Banking77,
-  MASSIVE, GoEmotions, DBpedia L2+L3, LEDGAR, 20-News, SIB-200, AG-News,
-  SNIPS, TREC-QC, fin-topics). Six further sources failed to load and are
-  listed in `universe.json:failed_sources` rather than silently omitted.
-  Normalization splits CamelCase and dots *before* lowercasing.
-- **Tiers** are defined by **measured similarity to the gold**, not by source
-  membership: NEAR is drawn from the gold's most-similar band, FAR from below
-  the median. Each FAR distractor is matched one-for-one into the surface
-  stratum (word count, char length, conjunction, plural) of a NEAR distractor,
-  and within that stratum the least-similar option is taken. This exists so
-  label *formatting* cannot signal which tier an option belongs to.
-- **Ambiguity control**: an adjudicated conflict matrix (cross-source pairs
+- **Universe**: 902 label strings from 17 loaded sources (CLINC-150, Banking77,
+  MASSIVE + MASSIVE scenarios, GoEmotions, dair-emotion, DBpedia-14 + DBpedia
+  L2 + L3, LEDGAR, 20-News, SIB-200, AG-News, SNIPS, TREC-QC, MTOP, fin-topics).
+  Two declared sources failed to load (`trec_fine`, `yahoo`) and are listed in
+  `universe.json:failed_sources` rather than silently omitted. Normalisation
+  splits CamelCase and dots *before* lowercasing.
+- **Pools** are defined by **measured similarity to the gold**, not by source
+  membership: `near` comes from the gold's most-similar band, `far` from below
+  the median. Each `far` distractor is matched one-for-one into the surface
+  stratum (word count, char length, conjunction, plural) of a `near` distractor,
+  and within that stratum the least-similar option is taken. This exists so label
+  *formatting* cannot signal which pool an option came from.
+- **Ambiguity control**: an adjudicated conflict matrix. Cross-source pairs
   default to conflict; same-source pairs default to keep, with an explicit
-  ambiguity list — high cosine is not ambiguity: `iot hue lighton` vs
-  `lightoff` are opposite actions). GoEmotions additionally excludes, per
-  item, every emotion a real rater voted for on that text.
-- **Positions** are seeded on the item uid, so gold position is independent of
-  the gold label.
+  ambiguity list, because high cosine is not ambiguity (`iot hue lighton` vs
+  `lightoff` are opposite actions and are exactly the difficulty `near` should
+  contain). GoEmotions additionally excludes, per item, every emotion a real
+  rater voted for on that text.
+- **Positions** are seeded on the item uid, so where the gold sits does not
+  depend on what the gold is.
 
-## Validation (`gates.json`)
-
-| gate | result |
-|---|---|
-| G1 prompt-option collision | PASS |
-| G2 format tell (far-vs-near surface AUC ≤ 0.60) | PASS — max 0.573 |
-| G3 text-free gold picker (≤ 2× chance) | **FAIL** — max 0.280 |
-| G4 gold-position uniformity | PASS — 60–63 of 64 slots used |
-| G5 tier separation (≥ +0.10 cosine) | PASS — +0.211 to +0.238 |
-| G6 both tiers feasible for every item at every K | PASS |
-| G7 no adjudicated conflict in any option set | PASS |
-| G8 gold present exactly once, no duplicates | PASS |
+Eight checks run as assertions at build time; results and per-cell numbers are in
+`gates.json`. Seven pass. G3 does not, and limit 1 below says what that costs.
 
 ## Known limits — read before using
 
 1. **G3 is open.** A classifier with no access to the item text finds the gold
-   above 2× chance in some cells, worst at **fintopic/far (0.280 vs 0.0625
-   chance)**; CLINC 0.145–0.185, GoEmotions 0.080–0.150. Report the per-cell
-   picker accuracy beside any accuracy table and discount accordingly.
-2. **fin-topic is excluded from RQ1 and RQ3** (pre-registration Amendment 1):
-   worst format residual, a self-contradictory taxonomy, and a hypernym class
-   (`general news or opinion`) that is also a legitimate gold. It is kept for
-   RQ2, where a format shortcut is constant across permutations of one item.
-3. **K ≤ 64 for tier contrasts** (`near`/`far`). 63 distractors is 12% of the
-   universe and can honestly be called "near"; 255 would be 32% and could not.
-   The `ext` pool carries 255 distractors for RQ1's K-curve to 256, but it is a
-   single pool — no near/far contrast exists above K=64.
-4. **Gold-string leakage**: CLINC 25%, fin-topic 5.5%, GoEmotions 3% of items
-   contain the gold verbatim. The `leaked` flag is on every item — stratify
-   K-curves by it.
-5. **No domain is clean for every model family.** CLINC is G3 for Laya (intent
-   is a trained family) and G4 for the deberta-zeroshot line; GoEmotions is the
-   reverse. Annotate rungs per (model, domain); never report a bare average.
-6. **Two domains for RQ3** (CLINC, GoEmotions) after Amendment 1. Thin, and
-   stated as a limitation rather than padded with an untrusted domain.
+   above the 0.125 gate in six of ten cells, against a chance rate of 0.0625.
+   Worst is **dbpedia/near at 0.260**, then fintopic/far 0.250, dbpedia/far
+   0.245, fintopic/near 0.190, clinc/far 0.175, clinc/near 0.155. Cleanest is
+   mtop/far at 0.060, under chance. Report the per-cell picker accuracy beside
+   any accuracy table and discount accordingly. The residual inflates the level
+   of a curve, not its shape, and it applies to every model equally.
+2. **fin-topic is excluded from two of the three questions**: worst format
+   residual, a self-contradictory taxonomy, and a hypernym class (`general news
+   or opinion`) that is also a legitimate gold. It is kept for the order test,
+   where a format shortcut is constant across permutations of one item.
+3. **K ≤ 64 for the near/far contrast.** 63 distractors is 7% of the 902-option
+   universe and can honestly be called near; 255 would be 28% and could not. The
+   `ext` pool carries 255 for longer candidate lists, but it is a single pool, so
+   no near/far contrast exists above K=64.
+4. **Gold-string leakage.** The gold string appears verbatim in the text for
+   CLINC 25.0%, DBpedia 14.5%, MTOP 6.0%, fin-topic 5.5%, GoEmotions 3.0% of
+   items. The `leaked` flag is on every item — stratify by it. CLINC and DBpedia
+   carry the longest candidate lists, so it matters there most.
+5. **No domain is clean for every model family.** CLINC is a trained family for
+   Laya and not for the deberta-zeroshot line; GoEmotions is the reverse. Grade
+   per (model, domain) and never report a bare average across them.
+6. **Two domains for the near/far contrast** (CLINC, MTOP). Thin, and stated as a
+   limitation rather than padded with a domain I did not trust.
 
 ## Provenance
 
-Built by `harness/build_v3.py` (items → `harness/items.py`, pools →
-`harness/tiers.py`, universe → `harness/universe.py` + `nominate.py` +
-`freeze_universe.py`), gated by `harness/gates.py`, exported by
-`harness/export_dataset.py`. Every defect this version fixes is documented in
-`../../REVIEW-2026-09-23.md`; the two earlier attempts and why they failed are
-in `../../DEVIATIONS.md`.
+Built by `harness/build/`: `universe.py` + `nominate.py` + `freeze.py` make the
+option universe, `items.py` draws the items, `tiers.py` builds the pools,
+`gates.py` runs the checks, `export.py` writes this folder. Reproduce with
+`python -m harness.build` then `python -m harness.build.export`.
+
+Design decisions and the rules fixed before any model ran are in
+`../../PLAN.md`; the runs themselves, including deviations, are in
+`../../EXPERIMENTS.md`.

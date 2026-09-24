@@ -3,7 +3,9 @@ __pycache__/
 *.pyc
 .DS_Store
 
-# working outputs: large, regenerable, and per-decision logs contain item text
-results/
-dataset/v3/          # texts included — NOT redistributable, see dataset/v3-public
+# raw per-decision logs and run transcripts: large and regenerable.
+# the small aggregates the README and figures are built from live in
+# results/published/ and ARE tracked.
+results/*
+!results/published/
 archive/pre-v3/results/

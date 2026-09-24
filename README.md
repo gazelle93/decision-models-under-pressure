@@ -1,15 +1,20 @@
 # Decision Models Under Pressure
 
-A comparison of seven systems that take a piece of text, a question, and a list of
-candidate answers, and return a probability over those candidates. Two of them are
-the products this was really about: TypeSafe's [Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev),
-which its makers call a new class of model, and Convai's
-[Laya](https://huggingface.co/convaiinnovations/laya), whose author says he
-published the same idea a year earlier and that Jev is marketing on top of it.
+Seven systems do the same job: take a piece of text, a question, and a list of
+candidate answers, and return a probability over those candidates. Here they are
+measured against each other as that job gets harder, in the three ways it gets
+harder in production. The candidate list grows, the option order changes, and the
+wrong answers stop being obvious.
 
-The other five are open models, and they are here to give those two numbers
-something to mean. How a model reads its candidates turns out to predict a lot, so
-they are grouped that way:
+Two of them are the ones I was curious about. TypeSafe's
+[Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev), which its
+makers call a new class of model, and Convai's
+[Laya](https://huggingface.co/convaiinnovations/laya), whose author has said
+publicly that he published the same idea a year earlier. The other five are open
+models I added so those two numbers would mean something.
+
+How a model reads its candidates turns out to predict a lot, so I grouped them
+that way:
 
 | model | how it reads the candidates |
 | --- | --- |
@@ -19,19 +24,19 @@ they are grouped that way:
 | `bge-large-en-v1.5` | embeds the text once, compares it to cached candidate vectors |
 | `thenlper/gte-large` | the same, different encoder |
 
-Only `gliclass` and Laya can see the candidates as a set. The other four score each
-one in isolation, which means they are incapable of noticing that two candidates
-are similar, and equally incapable of being swayed by the order you list them in.
-That distinction runs through all three results below.
+Only `gliclass` and Laya see the candidates as a set. The other four score each
+candidate on its own, so in principle they cannot notice that two candidates are
+similar, and the order you list them in cannot reach them. That split shows up in
+every result below, with one interesting exception.
 
-Published comparisons of these systems usually report one accuracy number on one
-candidate-set size. That turns out to hide most of what matters. The ranking of these
-models changes depending on how many options you offer, so I varied the three
-things a real deployment varies: how long the candidate list is, what order it is
-in, and how plausible the wrong answers are.
+Most comparisons of these systems report one accuracy number at one candidate-set
+size. That hides most of what matters, because the ranking changes depending on
+how many options you offer.
 
-Everything here was measured on one frozen dataset, with the contrasts and
-decision rules written down before the first call.
+Everything ran on one frozen dataset, with the comparisons and the pass/fail
+rules written down before the first call ([PLAN.md](PLAN.md)). n is 200 items per
+domain, which is enough to separate the large effects below and not enough for
+the small ones. Every caveat is load-bearing.
 
 ## What came out of it
 
@@ -39,73 +44,129 @@ Every model gets worse as the candidate list grows. The difference is how fast.
 
 ![Accuracy against candidate-set size](docs/figures/k-curve.png)
 
-Jev starts highest and stays highest. At 128 candidates it answers 60% correctly
-where Laya manages 39% and the best open model 41%. Its decline per doubling of the
-list is the shallowest in the study, shallower even than the embedding scorers whose
-design is supposed to make them scale gracefully.
+Jev starts highest and stays highest. At 128 candidates it answers 60%
+correctly, where Laya manages 39% and the best open model 41%. Chance at that
+list length is 0.8%, so everything here is doing real work; the question is how
+much of it survives a longer list.
 
-The chart stops at 128 candidates because Jev's API refuses more than 255 options,
-and a comparison is only worth reading where every model has data.
+Its decline per doubling of the list is the shallowest of the seven, shallower
+even than the embedding scorers whose design is supposed to help them scale.
+Measured over the same range for every model (K=2 to 128, since Jev's API
+refuses more than 255 options):
 
-Notice how little a single-number benchmark would tell you. At two candidates Laya
-sits second of seven, beating five of the six systems it is measured against, and
-trails Jev by two points. At 128 it has fallen to fourth and trails Jev by
-twenty-two.
+| model | accuracy lost per doubling of the candidate list |
+| --- | --- |
+| Jev | **-0.043** |
+| gte-large | -0.048 |
+| bge-large | -0.051 |
+| gliclass | -0.064 |
+| deberta-large | -0.070 |
+| deberta-base | -0.070 |
+| Laya | -0.073 |
 
-Next the wrong answers had to get harder. Every item has two versions: one
-where the distractors came from unrelated domains, and one where they were the
-right answer's nearest neighbours, so `create alarm` competed against
-`delete alarm` and `snooze alarm` rather than against `musical work`. The surface
-shape of the words was matched between the two versions, so only meaning
-separated them. The gap between the two is how much a model was relying on the
+Notice how little a single-number benchmark would tell you. At two candidates
+Laya sits second of seven and trails Jev by two points. At 128 it has fallen to
+fourth and trails by twenty-two.
+
+Next the wrong answers had to get harder. Every item exists in two versions: one
+where the distractors come from unrelated domains, and one where they are the
+right answer's nearest neighbours, so `create alarm` competes against
+`delete alarm` and `snooze alarm` rather than against `musical work`. I matched
+the surface shape of the words between the two versions so only meaning
+separates them. The gap between them is how much a model was leaning on the
 wrong answers being obvious.
 
 ![Accuracy lost when distractors are nearly right](docs/figures/near-distractors.png)
 
-Jev loses about a tenth of its accuracy. Laya loses over a third. This is the
-widest separation in the study and the one that matters most in production, where
-candidate sets are full of near misses.
+At 64 candidates Jev drops from 96.8% to 86.3%, losing about a tenth of what it
+had. Laya drops from 90.5% to 56.0% and gliclass from 87.0% to 51.2%, each
+losing something closer to four tenths. That is the widest spread in the whole
+experiment and the one I'd care most about in production, where candidate sets
+are full of near misses.
 
-Then the options got shuffled. Same question, same candidates, five different
-orderings.
+Then I shuffled the options. Same question, same candidates, five different
+orderings, and I counted how often the answer changed.
 
 ![Answers that change when only the order changes](docs/figures/order-flips.png)
 
-Two of the four open models never flip. Not rarely, never, because they score each
-option in isolation and order cannot reach them. Against that baseline Jev's 14.6%
-is a real cost: roughly one decision in seven is settled by list position rather
-than by content. It is also three and a half times better than Laya, which changes
-its answer on nearly half of its decisions at the same list size.
+Two of the four candidate-at-a-time models never flip: `bge-large` and
+`deberta-large` are exactly 0.0000 across 1,600 decisions each, which is what
+scoring each option in isolation should give you. It doubles as a check that the
+harness isn't shuffling something it shouldn't.
 
-The flips are not spread evenly. Jev is steadiest on request routing and intent,
-where it flips on 1.5% to 3% of items, and shakiest on emotional tone, where it
-flips on about a third. If you are routing support tickets this barely touches
-you. If you are scoring anything subjective it matters a lot.
+The other two are not quite zero. `deberta-base` flips on 0.2% of decisions and
+`gte-large` on 2.0%, and both turned out to be exact scoring ties broken by
+position rather than a real order effect: all 32 of gte's flipping items at 64
+candidates have two options tied to within 1e-9. Structural invariance holds. Ties
+are the crack in it, and if you are picking a model because order cannot reach
+it, 2% is still 2%.
 
-Two fixes are available to anyone deploying these systems today. Present the
-options in a fixed canonical order so the instability is at least deterministic, or
-ask the same question under several orderings and average the results, which buys
-exact stability at the price of several calls per decision.
+Against that baseline, Jev's 14.6% at 64 candidates is a real cost. Roughly one
+decision in seven is settled by list position rather than by content. It is also
+about a third of Laya's rate, which changes its answer on half of its decisions
+at the same list length.
 
-This is the result the four open models exist in this study to frame. Reading the
-candidates as a set is what lets a model weigh them against each other, and it is
-also what lets their order leak into the answer. The models that cannot do the
-first are immune to the second.
+The flips are not spread evenly, and the spread matters more than the headline:
+
+| where | Jev flips, unrelated distractors | Jev flips, near-neighbour distractors |
+| --- | --- | --- |
+| request routing (clinc) | 1.5% | 9.0% |
+| request routing (mtop) | 3.0% | 12.5% |
+| financial topics | 5.0% | 22.0% |
+| emotional tone | 30.5% | 33.0% |
+
+Intent routing with easy distractors is the best case and it is genuinely stable.
+Intent routing with plausible competing options, which is what a real router
+faces, runs four to six times worse. Anything subjective is worse again, and
+barely improves when the distractors get easy.
+
+Two fixes are available to anyone deploying these today. Present the options in a
+fixed canonical order, which at least makes the instability deterministic. Or ask
+the same question under several orderings and average, which buys exact stability
+at the price of several calls per decision.
+
+One more thing fell out of the logs after the fact. Confidence and correctness
+come apart badly as the list grows, and not for everyone:
+
+| model | calibration error at K=2 | at K=256 |
+| --- | --- | --- |
+| deberta-large | 0.064 | 0.070 |
+| deberta-base | 0.066 | 0.075 |
+| bge-large | 0.099 | 0.197 |
+| gte-large | 0.048 | 0.299 |
+| gliclass | 0.150 | 0.327 |
+| Laya | 0.032 | **0.573** |
+
+Laya is the best-calibrated model in the set at two candidates and by far the
+worst at 256. If you are gating on a confidence threshold, that is the number
+that decides whether the gate works. Jev is missing from this table because its
+API rounds probabilities to two decimals, which is too coarse to measure
+calibration; 98% of its responses contain at least one option at exactly 0.00.
 
 ## What this cannot tell you
 
-Jev's training data is not disclosed. The test items come from public datasets, so
+Jev's training data is not disclosed. The items come from public datasets, so
 "trained better" and "has seen these before" cannot be told apart here. The one
-hint available points both ways: Jev is steadiest on exactly the intent-style domains a
-decision product would most plausibly be trained on, and least steady on the one
-domain furthest from that. Nothing in these results settles it, and no outside
-evaluation can settle it while the training data stays private.
+hint available points both ways: Jev is steadiest on exactly the intent-style
+domains a decision product would plausibly be trained on, and shakiest on the
+domain furthest from that. Nothing here settles it, and no outside test can
+settle it while the training data stays private.
 
-Three smaller limits. Jev rounds its probabilities to two decimals, which is too
-coarse for calibration analysis, so this reports what it chose rather than how well
-calibrated it was. Its API caps candidate lists at 255 options, so every model stops
-at 128 here; the open models go further in the logs. And the near-distractor comparison rests on two domains,
-both of which every model in the study has plausibly seen.
+The Jev comparison was also not part of the original plan. I wrote the
+pre-registration around the three open architecture families and listed Jev as a
+conditional extra if I got API access. I did, it went in, and it reversed the
+conclusion I had been heading toward, which was that reading candidates as a set
+carries costs and buys nothing. Jev reads candidates as a set and carries much
+smaller costs. So the honest version is that the costs belong to those two open
+checkpoints rather than to the architecture. I've left the original reasoning in
+[EXPERIMENTS.md](EXPERIMENTS.md) rather than quietly rewriting it.
+
+Three smaller limits. The near-distractor comparison rests on two domains, both
+of which every model here has plausibly seen. Jev's API caps candidate lists at
+255 options, so the head-to-head stops at 128; the open models run to 256 and
+those numbers are in `results/published/`. And n is 200 items per domain, with
+bootstrap intervals on everything in EXPERIMENTS.md, which is enough to separate
+the large effects here and not enough for anything subtle.
 
 ## Reproducing it
 
@@ -113,80 +174,98 @@ both of which every model in the study has plausibly seen.
 python -m venv .venv
 .venv/bin/pip install torch transformers datasets sentence-transformers scikit-learn
 
-.venv/bin/python -m harness.rebuild_texts       # restore item texts, see Data below
-.venv/bin/python -m harness.run_v3 --rq rq3     # run one research question
-.venv/bin/python -m harness.analyze_rq3
+.venv/bin/python -m harness.run.local --rq rq3    # run one question
+.venv/bin/python -m harness.analyze.rq3
 ```
 
-To rebuild the dataset from scratch rather than using the published freeze:
+The dataset ships complete, so there is no rebuild step. To rebuild it from the
+upstream sources anyway:
 
 ```bash
-.venv/bin/python -m harness.build_v3 --n 200    # build and run the gates
-.venv/bin/python -m harness.export_dataset
+.venv/bin/python -m harness.build --n 200         # build and run the checks
+.venv/bin/python -m harness.build.export
 ```
 
-The Jev arm costs about a dollar for the full grid of 29,600 calls:
+The Jev arm cost $1.04 for the full grid of 29,600 calls:
 
 ```bash
 export OPENROUTER_API_KEY=sk-or-...
-.venv/bin/python -m harness.run_jev --rq rq3 --cap 2.00
+.venv/bin/python -m harness.run.jev --rq rq3 --cap 2.00
 ```
 
 ## Data
 
-The published dataset carries every label, distractor list and derived field, but
-no item text. The five upstream sources have incompatible terms and one of them is
-tweet text with no stated licence, so redistributing the texts is not ours to do.
-Each item instead carries a SHA-256 of its original text.
-`harness.rebuild_texts` pulls the texts from the original sources and checks every
-one against its published hash, so you get the exact items this study used without
-anything encumbered being republished.
+`dataset/v3/` holds 1,000 items across five domains, with the item text, the
+gold label, both distractor pools and every derived field. It is published under
+**CC BY-SA 4.0**, because MTOP is CC BY-SA 4.0 and ShareAlike carries over. If
+you reuse it, your version inherits that too. The code is MIT.
 
-Sources: CLINC-150 (CC BY 3.0), GoEmotions (Apache 2.0), MTOP (CC BY-SA 4.0),
-DBpedia Classes (CC BY-SA), twitter-financial-news-topic (no stated licence).
+| domain | source | licence |
+| --- | --- | --- |
+| clinc | [CLINC-150](https://huggingface.co/datasets/clinc/clinc_oos) | CC BY 3.0 |
+| goemotions | [GoEmotions](https://huggingface.co/datasets/google-research-datasets/go_emotions) | Apache 2.0 |
+| mtop | [MTOP](https://huggingface.co/datasets/WillHeld/mtop) | CC BY-SA 4.0 |
+| dbpedia | [DBpedia Classes](https://huggingface.co/datasets/DeveloperOats/DBPedia_Classes) | CC0 1.0 |
+| fintopic | [Twitter Financial News](https://huggingface.co/datasets/zeroshot/twitter-financial-news-topic) | MIT |
+
+Full attribution, the upstream papers, what I changed, and the GoEmotions
+content warning are in [`dataset/v3/README.md`](dataset/v3/README.md). Texts are
+verbatim; every item carries a SHA-256 of its text so you can check it against
+the original source. If you use this data, cite the upstream papers, not this
+repo.
 
 ## What is in here
 
 | path | contents |
 | --- | --- |
-| `dataset/v3-public/` | 1,000 items, the 902-option label universe, per-question splits, gate results, datacard |
-| `harness/` | the pipeline: universe construction, item and pool building, the gates, model adapters, runners, analyses |
-| `PREREGISTRATION.md` | the contrasts and decision rules, fixed before any model ran |
-| `EXPERIMENTS.md` | every run, including the results that went against expectation |
-| `docs/history/` | the audit that forced a rebuild of the dataset, and the deviations log |
-| `archive/pre-v3/` | superseded code, kept so the earlier claims can be traced |
+| `dataset/v3/` | 1,000 items, the 902-option label universe, per-question splits, the checks, datacard |
+| `harness/build/` | how the dataset is made: label universe, items, distractor tiers, the eight checks |
+| `harness/models/` | model adapters, one per family, plus the hosted Jev client |
+| `harness/run/` | the two runners, local and hosted |
+| `harness/analyze/` | one analysis per question, plus the figures |
+| `results/published/` | the aggregates every table and figure is built from |
+| `PLAN.md` | what I decided to measure, and the pass/fail rules, before anything ran |
+| `EXPERIMENTS.md` | every run, including the ones that went against what I expected |
 
-## How the dataset was validated
+## How the dataset was checked
 
-An earlier version of this study produced confident results that did not survive
-review. Three independent audits found that a classifier with no access to the
-item text could identify the right answer from label formatting alone, that an
-option's position was a function of its label rather than the item, and that one
-model's apparent context ceiling was an artifact of how this harness passed options
-to it.
+An earlier version of this produced confident results that did not survive
+review. Auditing it turned up three things that mattered: a classifier with no
+access to the item text could identify the right answer from label formatting
+alone, an option's position was a function of its label rather than the item, and
+one model's apparent context ceiling was an artifact of how my harness passed
+options to it.
 
-The dataset was rebuilt around those failures, and the checks that caught them now
+I rebuilt the dataset around those failures, and the checks that caught them now
 run as assertions before any model does. Eight of them: no option string may
 appear in the prompt's own wording, surface features must not separate near
-distractors from far ones, a text-blind classifier must not find the gold above
-chance, gold position must depend on the item, the near tier must be measurably
-nearer, every item must be usable in both tiers at every list size, no adjudicated
+distractors from far ones, a text-blind classifier must stay under twice chance,
+gold position must depend on the item, the near tier must be measurably nearer,
+every item must be usable in both tiers at every list size, no adjudicated
 ambiguous pair may sit together, and each option set must be well formed.
 
-Seven of the eight pass. The one that does not is the text-blind classifier, which
-still finds the right answer above chance on some cells, worst on DBpedia. The
-per-cell numbers are published in `dataset/v3-public/gates.json` rather than
-described away. Two fixes were tried and rejected, with their numbers
-recorded: coarser matching reopens the formatting gate, and dropping the affected
-items shrinks the sample while making the residual worse.
+Seven of the eight pass. The one that does not is the text-blind classifier,
+which still beats chance on some cells: 0.260 on DBpedia against a chance rate of
+0.0625 and a 0.125 gate. That means some accuracy on those cells comes from label
+formatting rather than from reading the text, and it inflates the level of the
+curves without changing their shape. Per-cell numbers are in
+`dataset/v3/gates.json` rather than described away. Two fixes were tried and
+rejected, with their numbers recorded: coarser matching reopens the formatting
+check, and dropping the affected items shrinks the sample while making the
+residual worse.
 
-Two pre-registered rules fired against expectation during the study. One
-voided a family-level comparison when the two models inside a family disagreed
-more than the families did. The other required that the order-invariant models
-score exactly zero, which they did, with the only exceptions traced to exact
-scoring ties broken by position.
+Two rules I'd written in advance fired against me during the run. One voided a
+family-level comparison when the two models inside a family disagreed more than
+the families did. The other required the order-invariant models to score exactly
+zero, which two of four did, with the other two traced to scoring ties.
 
 ## Licence
 
-MIT for the code. The datasets keep their own terms, listed above and in
-`LICENSE`.
+The dataset in `dataset/v3/` is CC BY-SA 4.0, inherited from MTOP. Per-source
+licences, credits and what I changed are in
+[`dataset/v3/README.md`](dataset/v3/README.md).
+
+The code carries no licence, which under default copyright means you may read it
+but not reuse it. That is deliberate rather than an oversight: the point of this
+repo is the method and the numbers, both of which you are welcome to take. If
+you want to reuse the code itself, ask and I'll add a licence.
