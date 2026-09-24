@@ -180,7 +180,7 @@ def main():
             try:
                 with fpath.open("w") as fh:
                     cell = run_cell(adapter, mname, sel, tier, spec["k_grid"], fh)
-                    if tier in ("near", "far") and rq == "rq2":
+                    if rq == "rq2":
                         cell.update(run_order(adapter, sel, tier, fh))
                 summary[f"{mname}|{dom}|{tier}"] = cell
                 sfile.write_text(json.dumps(summary, indent=1))

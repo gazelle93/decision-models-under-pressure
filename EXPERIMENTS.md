@@ -92,3 +92,52 @@ family for both), so no cell here is a G4-grade transfer claim. The open G3
 residual differs by domain (mtop far 0.060 is the cleanest cell in the suite,
 clinc 0.155-0.175), and models differ in how readily they exploit format, so
 the far-tier side of every Delta carries that uncertainty.
+
+
+### RQ2 / C1 — order sensitivity — 2026-09-24, n=800 (clinc, goemotions, fintopic, mtop)
+
+Dataset v3, 6 models x 4 domains x 2 tiers x K in {16,64} x 5 permutations.
+48 cells, ~9h wall clock, n=1600 per (model, K) cell, **0 failed permutations**
+so no downward bias. A flip = the argmax changed when only the option ORDER
+changed; the option set is identical.
+
+| model | fam | K=16 flip [95% CI] | K=64 flip [95% CI] |
+|---|---|---|---|
+| deberta-v3-large-zeroshot | A1 | 0.0000 [.0000,.0000] | 0.0000 [.0000,.0000] |
+| bge-large-en-v1.5 | A2 | 0.0000 [.0000,.0000] | 0.0000 [.0000,.0000] |
+| deberta-v3-base-zeroshot | A1 | 0.0006 [.0000,.0019] | 0.0019 [.0000,.0044] |
+| gte-large | A2 | 0.0119 [.0069,.0175] | 0.0200 [.0131,.0275] |
+| gliclass-large-v3.0 | A3 | **0.1569** [.1394,.1737] | **0.2819** [.2594,.3044] |
+| laya | A3 | **0.2062** [.1869,.2263] | **0.4938** [.4706,.5181] |
+
+**C1 FAILS decisively for both option-conditioned models at both K.** The bar
+was a 95% CI upper bound below 0.05; the observed lower bounds are 0.139 and
+0.187 at K=16 and 0.259 and 0.471 at K=64. **At K=64 Laya changes its answer on
+roughly half of all decisions purely from option ordering**, with the option
+set held identical.
+
+**Harness check passes.** A1 and A2 score each option independently, so order
+cannot exist for them: deberta-large and bge are exactly 0.0000. The two
+non-zero cases are exact ties resolved by position, verified directly —
+**32 of 32** gte flipping items at K=64 have an exact top-2 tie (gap < 1e-9) in
+their probability vector. Structural invariance holds; ties are the only crack.
+
+**Where flips concentrate.** Near tier > far tier everywhere, and the rate grows
+with K. Laya at K=64: clinc/far 0.090 -> mtop/near 0.745. The cheapest cell for
+Laya (clinc/far, its trained family against unrelated distractors) is 0.000 at
+K=16 — which is exactly the cell an earlier pilot sampled, and why that pilot
+reported "order flips nearly vanish". Across the full suite that reading was
+wrong by an order of magnitude.
+
+**Interpretation.** Presentation order is not a second-order nuisance for
+option-conditioned decision models; at realistic candidate counts it is a
+primary determinant of the answer. The same joint attention that lets these
+models compare candidates makes position part of the input. Combined with the
+RQ3 result (A3 also degrades fastest under near distractors), the mechanism
+that defines this architecture family is carrying two measurable costs and, so
+far, no measured benefit.
+
+**Caveats.** Flip rate counts argmax changes, not correctness; a model can flip
+between two defensible options. Mitigations exist and are untested here:
+order-shuffling augmentation during training, and test-time permutation
+ensembling, which restores exact invariance at M x latency.
