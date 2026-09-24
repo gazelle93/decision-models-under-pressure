@@ -1,37 +1,34 @@
 # Decision Models Under Pressure
 
 Seven systems do the same job: take a piece of text, a question, and a list of
-candidate answers, and return a probability over those candidates. Here they are
-measured against each other as that job gets harder, in the three ways it gets
-harder in production. The candidate list grows, the option order changes, and the
-wrong answers stop being obvious.
+candidate answers, and return a probability over those candidates. I measured
+them against each other as that job gets harder in the three ways it gets harder
+in production. The candidate list grows, the option order changes, and the wrong
+answers stop being obvious.
 
-Two of them are the ones I was curious about. TypeSafe's
-[Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev), which its
-makers call a new class of model, and Convai's
-[Laya](https://huggingface.co/convaiinnovations/laya), whose author has said
-publicly that he published the same idea a year earlier. The other five are open
-models I added so those two numbers would mean something.
+**Short version.** TypeSafe's
+[Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) held up
+best as the list grew and best when the wrong answers got plausible. Shuffle the
+option order, though, and it changes its answer on one decision in seven. Two of
+the open models never change theirs, because they cannot.
 
-How a model reads its candidates turns out to predict a lot, so I grouped them
-that way:
+| at 64 to 128 candidates | Jev | [Laya](https://huggingface.co/convaiinnovations/laya) | best open |
+| --- | --- | --- | --- |
+| accuracy at 128 candidates | **60%** | 39% | 41% |
+| accuracy lost per doubling of the list | **-0.043** | -0.073 | -0.048 |
+| accuracy lost when distractors get hard | **-0.105** | -0.351 | -0.256 |
+| answers changed by reordering alone | 14.6% | 49.4% | **0.0%** |
 
-| model | how it reads the candidates |
-| --- | --- |
-| `gliclass-large-v3.0` | all candidates in one pass, as a set, like Laya |
-| `deberta-v3-base-zeroshot-v2.0` | one pass per candidate, each scored against the text alone |
-| `deberta-v3-large-zeroshot-v2.0` | the same, larger |
-| `bge-large-en-v1.5` | embeds the text once, compares it to cached candidate vectors |
-| `thenlper/gte-large` | the same, different encoder |
+Jev's makers call it a new class of model. Laya's author has said publicly that
+he published the same idea a year earlier. On the first claim the numbers are
+not kind to the marketing, and on the second they are not kind to Laya: the idea
+does look older than Jev, and Jev is still the better implementation of it by a
+wide margin.
 
-Only `gliclass` and Laya see the candidates as a set. The other four score each
-candidate on its own, so in principle they cannot notice that two candidates are
-similar, and the order you list them in cannot reach them. That split shows up in
-every result below, with one interesting exception.
-
-Most comparisons of these systems report one accuracy number at one candidate-set
-size. That hides most of what matters, because the ranking changes depending on
-how many options you offer.
+The other five models are open ones I added so those two numbers would mean
+something. Most comparisons of these systems report one accuracy number at one
+candidate-set size, which hides most of what matters, because the ranking
+changes depending on how many options you offer.
 
 Everything ran on one frozen dataset, with the comparisons and the pass/fail
 rules written down before the first call ([PLAN.md](PLAN.md)). n is 200 items per
@@ -86,6 +83,23 @@ are full of near misses.
 
 Then I shuffled the options. Same question, same candidates, five different
 orderings, and I counted how often the answer changed.
+
+This is where it helps to know how each model reads its candidate list, because
+that single design choice predicts the result almost perfectly:
+
+| model | how it reads the candidates |
+| --- | --- |
+| Jev | undisclosed, but its answers depend on the order, so not one at a time |
+| Laya | all candidates in one pass, as a set |
+| `gliclass-large-v3.0` | the same |
+| `deberta-v3-base-zeroshot-v2.0` | one pass per candidate, each scored against the text alone |
+| `deberta-v3-large-zeroshot-v2.0` | the same, larger |
+| `bge-large-en-v1.5` | embeds the text once, compares it to cached candidate vectors |
+| `thenlper/gte-large` | the same, different encoder |
+
+A model that scores each candidate on its own cannot notice that two candidates
+are similar, and the order you list them in cannot reach it. A model that reads
+them as a set gets the first ability and the second problem together.
 
 ![Answers that change when only the order changes](docs/figures/order-flips.png)
 
