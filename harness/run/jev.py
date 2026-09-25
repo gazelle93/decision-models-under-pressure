@@ -2,6 +2,7 @@
 
 Usage:
   .venv/bin/python -m harness.run.jev --rq rq3 [--cap 2.00] [--workers 5] [--limit N]
+  .venv/bin/python -m harness.run.jev --rq rq2 --det --cap 0.60   # determinism control
 """
 from __future__ import annotations
 
@@ -21,6 +22,7 @@ OUT = pathlib.Path("results/jev")
 QUESTION = "Which label applies here?"
 N_ORDERS = 5
 ORDER_KS = [16, 64]
+DET_KS = [64]        # determinism control runs only where the headline lives
 MAX_K = 255          # API cap
 
 
@@ -39,11 +41,25 @@ def options_for(item, tier, K, seed=101, perm=None):
     return opts
 
 
-def plan(items, spec, rq):
-    """Every call this run needs, as (key, item, tier, K, perm)."""
+def plan(items, spec, rq, det=False):
+    """Every call this run needs, as (key, item, tier, K, perm).
+
+    det=True emits ONLY the determinism control: same item, same option set,
+    same ORDER (permutation 0, so it sits inside the distribution the RQ2
+    headline was measured over), five separate calls. Whatever flips there is
+    the API disagreeing with itself. It is a noise floor, not a term to
+    subtract — noise and order can flip the same item."""
     jobs = []
     for it in items:
         for tier in spec["tiers"]:
+            if det:
+                for K in DET_KS:
+                    if options_for(it, tier, K) is None:
+                        continue
+                    for s in range(N_ORDERS):
+                        jobs.append((f"{rq}|det|{it['uid']}|{tier}|{K}|{s}",
+                                     it, tier, K, 0))
+                continue
             for K in spec["k_grid"]:
                 if K > MAX_K:
                     continue
@@ -75,7 +91,7 @@ def main():
 
     OUT.mkdir(parents=True, exist_ok=True)
     client = JevClient(OUT / f"{rq}_ledger.jsonl", spend_cap=cap, log=log)
-    jobs = plan(items, spec, rq)
+    jobs = plan(items, spec, rq, det="--det" in a)
     todo = [j for j in jobs if j[0] not in client.done]
     est = sum((284 + 13 * j[3] + len(j[1]["text"]) / 4) * 0.042e-6 for j in todo)
     log(f"{rq}: {len(items)} items -> {len(jobs)} calls, {len(todo)} unpaid "

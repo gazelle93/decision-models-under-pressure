@@ -64,6 +64,13 @@ Items whose permutation set is incomplete are excluded from the rate, and the
 count of failed permutations is reported — dropping them silently biases flip
 rates downward, the direction that makes this contrast easier to pass.
 
+**Amendment, 2026-09-25.** C1 as written assumes option order is the only thing
+five repeat calls vary. For a hosted API it is not. Added a determinism control
+at K=64: same item, same option set, same order, five calls. The fixed-order
+rate is the noise floor under every flip number in this question. Results in
+`results/published/rq2_determinism.json` and EXPERIMENTS.md. Recorded here as a
+post-hoc amendment because it was, and the C1 bar itself is unchanged.
+
 ## RQ3 — distractor hardness
 
 Domains clinc, mtop. Tiers near and far, paired on the same items.

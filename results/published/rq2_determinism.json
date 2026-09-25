@@ -1,0 +1,112 @@
+{
+ "what": "RQ2 determinism control. 'shuffled' repeats the item under 5 option orders; 'fixed' repeats it 5 times under ONE order (permutation 0). The fixed rate is Jev disagreeing with itself. It is a noise floor, not a term to subtract: 54 of 248 flipping items flip under both arms, so the effects overlap. The gap is the order-attributable share.",
+ "model": "typesafe/jev-1.13-20260917 via OpenRouter /api/v1/systemone",
+ "K": 64,
+ "n_permutations": 5,
+ "run_date": "2026-09-25",
+ "calls": 8000,
+ "failures": 0,
+ "by_cell": {
+  "clinc|far": {
+   "n": 200,
+   "shuffled": 0.015,
+   "fixed": 0.0,
+   "gap": 0.015,
+   "gap_ci95": [
+    0.0,
+    0.035
+   ]
+  },
+  "clinc|near": {
+   "n": 200,
+   "shuffled": 0.09,
+   "fixed": 0.02,
+   "gap": 0.07,
+   "gap_ci95": [
+    0.035,
+    0.11
+   ]
+  },
+  "fintopic|far": {
+   "n": 200,
+   "shuffled": 0.05,
+   "fixed": 0.01,
+   "gap": 0.04,
+   "gap_ci95": [
+    0.015,
+    0.07
+   ]
+  },
+  "fintopic|near": {
+   "n": 200,
+   "shuffled": 0.22,
+   "fixed": 0.09,
+   "gap": 0.13,
+   "gap_ci95": [
+    0.075,
+    0.185
+   ]
+  },
+  "goemotions|far": {
+   "n": 200,
+   "shuffled": 0.305,
+   "fixed": 0.075,
+   "gap": 0.23,
+   "gap_ci95": [
+    0.17,
+    0.295
+   ]
+  },
+  "goemotions|near": {
+   "n": 200,
+   "shuffled": 0.33,
+   "fixed": 0.105,
+   "gap": 0.225,
+   "gap_ci95": [
+    0.155,
+    0.295
+   ]
+  },
+  "mtop|far": {
+   "n": 200,
+   "shuffled": 0.03,
+   "fixed": 0.005,
+   "gap": 0.025,
+   "gap_ci95": [
+    0.005,
+    0.05
+   ]
+  },
+  "mtop|near": {
+   "n": 200,
+   "shuffled": 0.125,
+   "fixed": 0.04,
+   "gap": 0.085,
+   "gap_ci95": [
+    0.05,
+    0.125
+   ]
+  }
+ },
+ "pooled": {
+  "n": 1600,
+  "shuffled": 0.1456,
+  "fixed": 0.0431,
+  "gap": 0.1025,
+  "gap_ci95": [
+   0.0862,
+   0.1187
+  ],
+  "flip_both": 54,
+  "flip_shuffled_only": 179,
+  "flip_fixed_only": 15
+ },
+ "laya_control": {
+  "fixed": 0.0,
+  "n_items": 3200,
+  "calls": 16000,
+  "failures": 0,
+  "note": "Laya over both K=16 and K=64, all 8 cells, exactly 0.0000. Runs locally under no_grad with no sampling.",
+  "shuffled": 0.4938
+ }
+}

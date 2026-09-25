@@ -26,10 +26,10 @@ papers, not this repo** — they did the work the labels rest on.
 
 Three notes the upstream cards carry and this one should too. GoEmotions texts
 are Reddit comments and some are offensive or sensitive. The MTOP mirror above
-has no licence metadata of its own; CC BY-SA 4.0 comes from the original Meta
-release and is corroborated by other mirrors (`tasksource/mtop`,
-`SEACrowd/mtop_intent_classification`). The fintopic texts are tweets written by
-third parties, so the MIT grant is the uploader's; this repo relies on that
+has no licence metadata of its own; CC BY-SA 4.0 is the licence of the original
+Meta release (verified 2026-09-25) and is carried by the other mirrors
+(`tasksource/mtop`, `SEACrowd/mtop_intent_classification`). The fintopic texts
+are tweets written by third parties, so the MIT grant is the uploader's; this repo relies on that
 stated licence and makes no independent claim about the underlying posts.
 
 **What changed from upstream**, identically for all five: a seeded 200-item

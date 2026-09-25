@@ -124,6 +124,38 @@ non-zero cases are exact ties resolved by position, verified directly —
 **32 of 32** gte flipping items at K=64 have an exact top-2 tie (gap < 1e-9) in
 their probability vector. Structural invariance holds; ties are the only crack.
 
+#### Amendment, 2026-09-25 — determinism control (not pre-registered)
+
+The flip measure above sends five calls that differ in two ways: the option
+order changed, and they are five separate calls. Nothing in the original plan
+separated those. This arm holds the order fixed at permutation 0 and calls five
+times anyway, so whatever flips is the system disagreeing with itself. Run after
+the fact, so it is an amendment and not a pre-registered check; the arm is
+`--det` in `harness/run/jev.py` and `harness/run/determinism.py`, K=64 only.
+
+| model | n | shuffled | fixed | gap | 95% CI on gap |
+|---|---|---|---|---|---|
+| Jev | 1600 | 0.1456 | **0.0431** | +0.1025 | [+0.0862, +0.1187] |
+| laya | 3200 | 0.4938 | **0.0000** | +0.4938 | — |
+
+Per cell, Jev's gap clears zero everywhere: clinc far +0.015 [.000,.035], clinc
+near +0.070 [.035,.110], mtop far +0.025 [.005,.050], mtop near +0.085
+[.050,.125], fintopic far +0.040 [.015,.070], fintopic near +0.130 [.075,.185],
+goemotions far +0.230 [.170,.295], goemotions near +0.225 [.155,.295].
+
+**Two conclusions.** The order effect survives at about ten points rather than
+fourteen, so C1 still fails for Jev by a wide margin. And Jev is not
+reproducible: identical input five times changes the answer on 4.3% of
+decisions, where Laya is exactly 0.0000 over 16,000 calls. The C1 framing
+assumed order was the only thing a repeat call could vary. It was not.
+
+The effects overlap and do not decompose: of 248 items flipping under either
+arm, 179 flipped only when shuffled, 15 only under a fixed order, 54 under
+both. The fixed rate is a floor on the noise, not a term to subtract.
+
+Laya's exact zero doubles as a second harness check. Whatever produces Jev's
+4.3%, it is not the measurement.
+
 **Where flips concentrate.** Near tier > far tier everywhere, and the rate grows
 with K. Laya at K=64: clinc/far 0.090 -> mtop/near 0.745. The cheapest cell for
 Laya (clinc/far, its trained family against unrelated distractors) is 0.000 at
@@ -251,7 +283,7 @@ contain at least one option at exactly 0.00, which is too coarse to bin.
 | | Result |
 |---|---|
 | **RQ1 / C3** | Families separate by slope. A2 degrades slowest (-0.048/-0.053); A1 and A3 indistinguishable (-0.066 to -0.081). Rank order inverts between K=2 and K=256. Text length is a weak second factor. |
-| **RQ2 / C1** | FAILS for option-conditioned models: 16-49% of answers change from option order alone. A1/A2 structurally invariant (verified: exact 0.0000, with ties the only crack). |
+| **RQ2 / C1** | FAILS for option-conditioned models: 16-49% of answers change from option order alone. A1/A2 structurally invariant (verified: exact 0.0000, with ties the only crack). Amended 2026-09-25: Jev's 14.6% is 10.2 points order and a 4.3% floor of the model not repeating itself; Laya's 49.4% is all order. |
 | **RQ3 / C2** | Applicability gate fired at K=16/32 (within-family > between-family). H3 NOT supported; at K=64 A3 carries the LARGEST near-distractor penalty (+0.351 vs +0.256 A1). |
 
 **Converging conclusion.** Across three independent questions, the

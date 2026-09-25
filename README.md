@@ -9,8 +9,10 @@ answers stop being obvious.
 **Short version.** TypeSafe's
 [Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) held up
 best as the list grew and best when the wrong answers got plausible. Shuffle the
-option order, though, and it changes its answer on one decision in seven. Two of
-the open models never change theirs, because they cannot.
+option order, though, and it changes its answer on one decision in seven. Hold
+the order fixed and it still changes its answer on one in twenty-three, because
+it does not repeat itself. Two of the open models never change theirs at all,
+because they cannot.
 
 | at 64 to 128 candidates | Jev | [Laya](https://huggingface.co/convaiinnovations/laya) | best open |
 | --- | --- | --- | --- |
@@ -18,6 +20,7 @@ the open models never change theirs, because they cannot.
 | accuracy lost per doubling of the list | **-0.043** | -0.073 | -0.048 |
 | accuracy lost when distractors get hard | **-0.105** | -0.351 | -0.256 |
 | answers changed by reordering alone | 14.6% | 49.4% | **0.0%** |
+| answers changed with the order held fixed | 4.3% | **0.0%** | **0.0%** |
 
 Jev's makers call it a new class of model. Laya's author has said publicly that
 he published the same idea a year earlier. On the first claim the numbers are
@@ -115,10 +118,32 @@ candidates have two options tied to within 1e-9. Structural invariance holds. Ti
 are the crack in it, and if you are picking a model because order cannot reach
 it, 2% is still 2%.
 
-Against that baseline, Jev's 14.6% at 64 candidates is a real cost. Roughly one
-decision in seven is settled by list position rather than by content. It is also
-about a third of Laya's rate, which changes its answer on half of its decisions
-at the same list length.
+Against that baseline, Jev's 14.6% at 64 candidates is a real cost, and about a
+third of Laya's rate, which changes its answer on half of its decisions at the
+same list length.
+
+How much of that 14.6% is the order, though, and how much is Jev not repeating
+itself? Five calls that differ in option order also differ in being five calls.
+The control is to hold the order fixed and call five times anyway, so I ran it
+(8,000 calls, `results/published/rq2_determinism.json`):
+
+| | shuffled order | fixed order | gap | 95% CI |
+| --- | --- | --- | --- | --- |
+| Jev, K=64, n=1600 | 14.6% | 4.3% | +10.2 | [+8.6, +11.9] |
+| Laya, same items | 49.4% | **0.0%** | +49.4 | — |
+
+![How much of the flip rate is the order](docs/figures/flip-decomposition.png)
+
+So roughly ten points of the fourteen belong to the order, and every one of the
+eight domain-and-tier cells clears zero on its own. The remaining 4.3% is Jev
+disagreeing with itself: same item, same options, same order, five calls. The
+two effects overlap rather than stack, so the gap is the right statistic and
+subtraction is not: of the 248 items that flipped under either arm, 179 flipped
+only when shuffled, 15 only under a fixed order, and 54 under both.
+
+Laya's zero is exact, over 3,200 items and 16,000 calls, which is what a local
+model under `no_grad` with no sampling in the path should give. It is also what
+rules out the harness as the source of anyone's instability.
 
 The flips are not spread evenly, and the spread matters more than the headline:
 
@@ -134,10 +159,19 @@ Intent routing with plausible competing options, which is what a real router
 faces, runs four to six times worse. Anything subjective is worse again, and
 barely improves when the distractors get easy.
 
-Two fixes are available to anyone deploying these today. Present the options in a
-fixed canonical order, which at least makes the instability deterministic. Or ask
-the same question under several orderings and average, which buys exact stability
-at the price of several calls per decision.
+Two fixes are available to anyone deploying these today, and the control changes
+what the first one is worth. Present the options in a fixed canonical order: on
+Laya that buys exact reproducibility, on Jev it removes ten of the fourteen
+points and leaves 4.3% that no amount of canonical ordering will reach. Or ask
+the same question under several orderings and take the majority, which costs
+several calls per decision and is the only one of the two that helps with a model
+that will not repeat itself.
+
+Worth separating the two properties when you choose, because they do not travel
+together. Laya is perfectly reproducible and the most order-sensitive thing here.
+Jev is the reverse. If you need the same input to give the same answer twice,
+that is a different question from whether the list order reaches the model, and
+only one of them is fixed by sorting your options.
 
 One more thing fell out of the logs after the fact. Confidence and correctness
 come apart badly as the list grows, and not for everyone:
@@ -174,6 +208,12 @@ carries costs and buys nothing. Jev reads candidates as a set and carries much
 smaller costs. So the honest version is that the costs belong to those two open
 checkpoints rather than to the architecture. I've left the original reasoning in
 [EXPERIMENTS.md](EXPERIMENTS.md) rather than quietly rewriting it.
+
+The determinism control was run after the fact, on 2026-09-25, and was not part
+of the pre-registration. I should have planned it: the original flip measure
+varied two things at once and I only noticed when someone would obviously have
+asked. It covers K=64 only, so the K=16 flip rates in EXPERIMENTS.md still carry
+an unmeasured noise component.
 
 Three smaller limits. The near-distractor comparison rests on two domains, both
 of which every model here has plausibly seen. Jev's API caps candidate lists at

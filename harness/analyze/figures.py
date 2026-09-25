@@ -20,6 +20,7 @@ OUT = pathlib.Path("docs/figures")
 
 INK, MUTED, GRID = "#6b7280", "#9ca3af", "#d8dad8"
 JEV, LAYA, FIELD, ZERO = "#2a78d6", "#eb6834", "#b6bbc0", "#1baf7a"
+JEV_T = "#93bdec"      # tint of JEV: same entity, second measurement
 KS = [2, 4, 8, 16, 32, 64, 128]
 SHORT = {
     "deberta-v3-large-zeroshot-v2.0": "deberta-large",
@@ -164,6 +165,18 @@ def main():
           for n, v in rows],
          "Answers that change when only the option order changes",
          "share of decisions, 64 candidates", "order-flips.png",
+         fmt="{:.1%}", xmax=.60, zero_label="0.0% (exact)")
+
+    # What the flip rate is actually made of. Shuffling the order varies two
+    # things at once for a hosted API: the order, and the fact that it is a
+    # second call. The fixed-order bars separate them.
+    det = load("rq2_determinism.json")
+    bars([("Laya, shuffled order", det["laya_control"]["shuffled"], LAYA),
+          ("Laya, order held fixed", det["laya_control"]["fixed"], ZERO),
+          ("Jev, shuffled order", det["pooled"]["shuffled"], JEV),
+          ("Jev, order held fixed", det["pooled"]["fixed"], JEV_T)],
+         "How much of the flip rate is the order, and how much is the model",
+         "share of decisions, 64 candidates", "flip-decomposition.png",
          fmt="{:.1%}", xmax=.60, zero_label="0.0% (exact)")
 
     # Near vs far distractors at K=64, every model shown individually.
